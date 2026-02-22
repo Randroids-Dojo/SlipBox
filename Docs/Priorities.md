@@ -6,13 +6,12 @@ Implementation roadmap for SlipBox Phase 1: manual note ingestion + auto-linking
 
 ## Current Status
 
-**Completed:** Priorities 1-2 (scaffolding + types). The Next.js app is deployed on Vercel with a health-check endpoint.
+**Completed:** Priorities 1-3 (scaffolding + types + config). The Next.js app is deployed on Vercel with a health-check endpoint. All tunables are centralized in `src/config.ts`.
 
-**Next up:** Priorities 3-6 are pure logic modules with no external dependencies on each other. They form the engine core and can be built in sequence:
+**Next up:** Priorities 4-6 are pure logic modules with no external dependencies on each other. They form the engine core and can be built in sequence:
 
 | Priority | Module | What it does |
 |----------|--------|-------------|
-| **3** | `src/config.ts` | Centralizes thresholds, model names, repo coordinates |
 | **4** | `src/note.ts` | ID generation, atomic note normalization, validation |
 | **5** | `src/embeddings.ts` | Pluggable embedding provider interface + OpenAI impl |
 | **6** | `src/similarity.ts` | Cosine similarity + threshold-based match finding |
@@ -31,7 +30,7 @@ Finally, Priorities 9-10 wire everything into API routes:
 | **9** | `app/api/add-note/route.ts` | Full pipeline: create note, embed, link, commit |
 | **10** | `app/api/link-pass/route.ts` | Batch recompute all similarity links |
 
-**Recommended first move:** Start with Priority 3 (Config Module) — it's small, has no dependencies, and every other module imports from it.
+**Recommended next move:** Start with Priority 4 (Note Module) — it depends only on types and config, both of which are complete.
 
 ---
 
@@ -60,11 +59,11 @@ Define the data shapes everything else builds on.
 
 ---
 
-## Priority 3 — Config Module ← START HERE
+## Priority 3 — Config Module ✓
 
 Centralize tunables so nothing is hardcoded in logic.
 
-- [ ] `src/config.ts` — Similarity threshold (0.82), embedding model name, PrivateBox repo coordinates, GitHub API base URL
+- [x] `src/config.ts` — Similarity threshold (0.82), embedding model name, PrivateBox repo coordinates, GitHub API base URL
 
 **Done when:** Config values are importable and overridable via env vars.
 
