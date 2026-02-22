@@ -6,17 +6,9 @@ Implementation roadmap for SlipBox Phase 1: manual note ingestion + auto-linking
 
 ## Current Status
 
-**Completed:** Priorities 1-4 (scaffolding + types + config + note module). The Next.js app is deployed on Vercel with a health-check endpoint. All tunables are centralized in `src/config.ts`. The note module handles ID generation, content normalization, validation, and serialization with 21 unit tests.
+**Completed:** Priorities 1-6 (scaffolding + types + config + note module + embedding module + similarity module). The Next.js app is deployed on Vercel with a health-check endpoint. All tunables are centralized in `src/config.ts` with lazy validation for required env vars. The note module handles ID generation, content normalization, validation, and serialization. The embedding module provides a pluggable `EmbeddingProvider` interface with an OpenAI implementation. The similarity module computes cosine similarity and finds threshold-based matches. 45 unit tests pass.
 
-**Next up:** Priorities 5-6 are pure logic modules with no external dependencies on each other. They form the remaining engine core and can be built in sequence:
-
-| Priority | Module | What it does |
-|----------|--------|-------------|
-| **4** | `src/note.ts` | ID generation, atomic note normalization, validation |
-| **5** | `src/embeddings.ts` | Pluggable embedding provider interface + OpenAI impl |
-| **6** | `src/similarity.ts` | Cosine similarity + threshold-based match finding |
-
-After those four, Priorities 7-8 add the persistence and graph layers:
+**Next up:** Priorities 7-8 add the persistence and graph layers:
 
 | Priority | Module | What it does |
 |----------|--------|-------------|
@@ -30,7 +22,7 @@ Finally, Priorities 9-10 wire everything into API routes:
 | **9** | `app/api/add-note/route.ts` | Full pipeline: create note, embed, link, commit |
 | **10** | `app/api/link-pass/route.ts` | Batch recompute all similarity links |
 
-**Recommended next move:** Start with Priority 5 (Embedding Module) — it depends only on types and config, both of which are complete.
+**Recommended next move:** Start with Priority 7 (GitHub Integration) — it depends on types and config, both of which are complete.
 
 ---
 
@@ -83,25 +75,27 @@ Handle note creation independent of storage.
 
 ---
 
-## Priority 5 — Embedding Module
+## Priority 5 — Embedding Module ✓
 
 Generate embeddings with a pluggable provider interface.
 
-- [ ] `src/embeddings.ts` — `EmbeddingProvider` interface (`embed(text: string): Promise<number[]>`)
-- [ ] OpenAI implementation using `text-embedding-3-large`
-- [ ] Unit tests with mocked OpenAI responses
+- [x] `src/embeddings.ts` — `EmbeddingProvider` interface (`embed(text: string): Promise<number[]>`)
+- [x] OpenAI implementation using `text-embedding-3-large` (direct `fetch`, no SDK dependency)
+- [x] `embedNote()` convenience helper to produce `NoteEmbedding` records
+- [x] Unit tests with mocked OpenAI responses (8 tests via vitest)
 
 **Done when:** Can generate an embedding vector from a string, and provider is swappable.
 
 ---
 
-## Priority 6 — Similarity Module
+## Priority 6 — Similarity Module ✓
 
 Pure math, no external dependencies.
 
-- [ ] `src/similarity.ts` — Cosine similarity function
-- [ ] Find all notes above threshold given a target embedding and an embeddings index
-- [ ] Unit tests with known vectors
+- [x] `src/similarity.ts` — Cosine similarity function
+- [x] `findMatches()` — find all notes above threshold given a target embedding and an embeddings index
+- [x] `matchesToLinks()` — convert similarity matches to `NoteLink` objects
+- [x] Unit tests with known vectors (16 tests via vitest)
 
 **Done when:** Given two vectors, returns correct cosine similarity. Given an index, returns ranked matches above threshold.
 
