@@ -11,3 +11,5 @@ export type {
   NoteEmbedding,
   EmbeddingsIndex,
 } from "./embedding";
+
+export type { BacklinksIndex } from "./graph";
