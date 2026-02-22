@@ -160,7 +160,7 @@ export function kmeans(
     ? initCentroids.map((c) => [...c])
     : kmeansppInit(vectors, k);
 
-  let assignments = new Array<number>(n).fill(0);
+  const assignments = new Array<number>(n).fill(0);
   let iterations = 0;
 
   for (let iter = 0; iter < maxIterations; iter++) {
