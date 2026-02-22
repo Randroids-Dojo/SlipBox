@@ -3,6 +3,9 @@
  *
  * Every tunable lives here. Values fall back to sensible defaults
  * and can be overridden via environment variables.
+ *
+ * Required environment variables are validated lazily (on first access)
+ * so that importing this module in tests does not throw.
  */
 
 function requireEnv(name: string): string {
@@ -27,6 +30,22 @@ function optionalNumericEnv(name: string, fallback: number): number {
   return parsed;
 }
 
+/**
+ * Create a lazy getter that defers validation until first access.
+ * The resolved value is cached after the first successful read.
+ */
+function lazyRequired(name: string): { get value(): string } {
+  let cached: string | undefined;
+  return {
+    get value(): string {
+      if (cached === undefined) {
+        cached = requireEnv(name);
+      }
+      return cached;
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Embedding
 // ---------------------------------------------------------------------------
@@ -37,8 +56,12 @@ export const EMBEDDING_MODEL = optionalEnv(
   "text-embedding-3-large",
 );
 
-/** OpenAI API key. */
-export const OPENAI_API_KEY = requireEnv("OPENAI_API_KEY");
+const _openaiApiKey = lazyRequired("OPENAI_API_KEY");
+
+/** OpenAI API key (validated on first access). */
+export function getOpenAIApiKey(): string {
+  return _openaiApiKey.value;
+}
 
 // ---------------------------------------------------------------------------
 // Similarity
@@ -60,14 +83,24 @@ export const GITHUB_API_BASE = optionalEnv(
   "https://api.github.com",
 );
 
-/** Fine-grained GitHub PAT with Contents read/write on PrivateBox. */
-export const GITHUB_TOKEN = requireEnv("GITHUB_TOKEN");
+const _githubToken = lazyRequired("GITHUB_TOKEN");
+const _privateboxOwner = lazyRequired("PRIVATEBOX_OWNER");
+const _privateboxRepo = lazyRequired("PRIVATEBOX_REPO");
 
-/** GitHub owner (user or org) of the PrivateBox repository. */
-export const PRIVATEBOX_OWNER = requireEnv("PRIVATEBOX_OWNER");
+/** Fine-grained GitHub PAT with Contents read/write on PrivateBox (validated on first access). */
+export function getGitHubToken(): string {
+  return _githubToken.value;
+}
 
-/** PrivateBox repository name. */
-export const PRIVATEBOX_REPO = requireEnv("PRIVATEBOX_REPO");
+/** GitHub owner (user or org) of the PrivateBox repository (validated on first access). */
+export function getPrivateBoxOwner(): string {
+  return _privateboxOwner.value;
+}
+
+/** PrivateBox repository name (validated on first access). */
+export function getPrivateBoxRepo(): string {
+  return _privateboxRepo.value;
+}
 
 // ---------------------------------------------------------------------------
 // PrivateBox paths (relative to repo root)
