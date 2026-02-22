@@ -13,3 +13,5 @@ export type {
 } from "./embedding";
 
 export type { BacklinksIndex } from "./graph";
+
+export type { Cluster, ClustersIndex } from "./cluster";
