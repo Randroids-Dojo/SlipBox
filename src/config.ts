@@ -47,6 +47,17 @@ function lazyRequired(name: string): { get value(): string } {
 }
 
 // ---------------------------------------------------------------------------
+// Authentication
+// ---------------------------------------------------------------------------
+
+const _slipboxApiKey = lazyRequired("SLIPBOX_API_KEY");
+
+/** Shared secret used to authenticate inbound API requests (validated on first access). */
+export function getSlipBoxApiKey(): string {
+  return _slipboxApiKey.value;
+}
+
+// ---------------------------------------------------------------------------
 // Embedding
 // ---------------------------------------------------------------------------
 

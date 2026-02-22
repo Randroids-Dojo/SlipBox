@@ -6,23 +6,9 @@ Implementation roadmap for SlipBox Phase 1: manual note ingestion + auto-linking
 
 ## Current Status
 
-**Completed:** Priorities 1-6 (scaffolding + types + config + note module + embedding module + similarity module). The Next.js app is deployed on Vercel with a health-check endpoint. All tunables are centralized in `src/config.ts` with lazy validation for required env vars. The note module handles ID generation, content normalization, validation, and serialization. The embedding module provides a pluggable `EmbeddingProvider` interface with an OpenAI implementation. The similarity module computes cosine similarity and finds threshold-based matches. 45 unit tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication. The full note ingestion and auto-linking pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 90 unit and integration tests pass.
 
-**Next up:** Priorities 7-8 add the persistence and graph layers:
-
-| Priority | Module | What it does |
-|----------|--------|-------------|
-| **7** | `src/github.ts` | Read/write PrivateBox files via GitHub Contents API |
-| **8** | `src/graph.ts` | Bidirectional backlink management + serialization |
-
-Finally, Priorities 9-10 wire everything into API routes:
-
-| Priority | Module | What it does |
-|----------|--------|-------------|
-| **9** | `app/api/add-note/route.ts` | Full pipeline: create note, embed, link, commit |
-| **10** | `app/api/link-pass/route.ts` | Batch recompute all similarity links |
-
-**Recommended next move:** Start with Priority 7 (GitHub Integration) — it depends on types and config, both of which are complete.
+**Phase 1 is complete.** The deferred items below are targets for Phase 2+.
 
 ---
 
@@ -101,56 +87,75 @@ Pure math, no external dependencies.
 
 ---
 
-## Priority 7 — GitHub Integration
+## Priority 7 — GitHub Integration ✓
 
 Read and write PrivateBox contents via GitHub API.
 
-- [ ] `src/github.ts` — Read file from repo (with SHA tracking for updates)
-- [ ] Write/update file in repo (commit via Contents API)
-- [ ] Read `embeddings.json` and `backlinks.json` index files
-- [ ] Write updated index files back
-- [ ] Handle file-not-found gracefully (first note bootstraps the repo)
+- [x] `src/github.ts` — Read file from repo (with SHA tracking for updates)
+- [x] Write/update file in repo (commit via Contents API)
+- [x] Read `embeddings.json` and `backlinks.json` index files
+- [x] Write updated index files back
+- [x] Handle file-not-found gracefully (first note bootstraps the repo)
+- [x] Unit tests with mocked GitHub API (13 tests via vitest)
 
 **Done when:** Can round-trip a file to a test GitHub repo.
 
 ---
 
-## Priority 8 — Graph Module
+## Priority 8 — Graph Module ✓
 
 Manage the backlink structure.
 
-- [ ] `src/graph.ts` — Add bidirectional link between two note IDs
-- [ ] Remove link
-- [ ] Serialize/deserialize `backlinks.json`
+- [x] `src/graph.ts` — Add bidirectional link between two note IDs
+- [x] Remove link
+- [x] Serialize/deserialize `backlinks.json`
+- [x] `rebuildBacklinks()` — rebuild full index from link pairs (used by link-pass)
+- [x] `types/graph.ts` — `BacklinksIndex` type definition
+- [x] Unit tests (17 tests via vitest)
 
 **Done when:** Backlink graph can be built, modified, and persisted.
 
 ---
 
-## Priority 9 — POST /api/add-note
+## Priority 9 — POST /api/add-note ✓
 
 The first real endpoint. Ties everything together.
 
-- [ ] `app/api/add-note/route.ts`
-- [ ] Accept `{ "content": "..." }` POST body
-- [ ] Pipeline: create note → embed → fetch index → similarity pass → update links → commit all changes
-- [ ] Return `{ "noteId": "...", "linkedNotes": [...] }`
-- [ ] Integration test with mocked GitHub + OpenAI
+- [x] `app/api/add-note/route.ts`
+- [x] Accept `{ "content": "..." }` POST body
+- [x] Pipeline: create note → embed → fetch index → similarity pass → update links → commit all changes
+- [x] Return `{ "noteId": "...", "linkedNotes": [...] }`
+- [x] Integration test with mocked GitHub + OpenAI (4 tests via vitest)
 
 **Done when:** A POST request adds a note to PrivateBox with correct backlinks.
 
 ---
 
-## Priority 10 — POST /api/link-pass
+## Priority 10 — POST /api/link-pass ✓
 
 Batch recomputation of all links.
 
-- [ ] `app/api/link-pass/route.ts`
-- [ ] Fetch all embeddings, recompute full similarity matrix
-- [ ] Rebuild `backlinks.json`
-- [ ] Commit updated index
+- [x] `app/api/link-pass/route.ts`
+- [x] Fetch all embeddings, recompute full similarity matrix
+- [x] Rebuild `backlinks.json`
+- [x] Commit updated index
+- [x] Integration test with mocked GitHub (3 tests via vitest)
 
 **Done when:** Calling link-pass produces a correct backlink graph for all existing notes.
+
+---
+
+## API Authentication ✓
+
+Protect inbound endpoints so only authorized clients (e.g. your ChatGPT) can call them.
+
+- [x] `SLIPBOX_API_KEY` environment variable in config (lazy-validated)
+- [x] `src/auth.ts` — `verifyAuth()` checks `Authorization: Bearer <key>` header
+- [x] Constant-time token comparison to prevent timing attacks
+- [x] Clear error responses: 401 for missing/malformed header, 403 for wrong key
+- [x] Unit tests (8 tests via vitest)
+
+**Done when:** Requests without a valid Bearer token are rejected before reaching any business logic.
 
 ---
 
