@@ -1,0 +1,33 @@
+{
+  "name": "slipbox",
+  "version": "1.0.0",
+  "description": "A Zettelkasten (German for \"slip box\") is a personal knowledge management method using interconnected, atomistic notes to foster creative thinking. This project helps with  creating \"permanent\" notes from fleeting thoughts or literature, linking them to existing notes, and organizing them to build a, \"second brain\".",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:17078/git/Randroids-Dojo/SlipBox"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "next": "^16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "@types/react": "^19.2.14",
+    "eslint": "^9.39.3",
+    "eslint-config-next": "^16.1.6",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  }
+}
