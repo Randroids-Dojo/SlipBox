@@ -5,7 +5,10 @@ import { POST } from "./route";
 // Environment setup
 // ---------------------------------------------------------------------------
 
+const TEST_API_KEY = "sk-test-slipbox-key";
+
 beforeEach(() => {
+  process.env.SLIPBOX_API_KEY = TEST_API_KEY;
   process.env.OPENAI_API_KEY = "sk-test";
   process.env.GITHUB_TOKEN = "ghp_test_token";
   process.env.PRIVATEBOX_OWNER = "test-owner";
@@ -13,6 +16,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete process.env.SLIPBOX_API_KEY;
   delete process.env.OPENAI_API_KEY;
   delete process.env.GITHUB_TOKEN;
   delete process.env.PRIVATEBOX_OWNER;
@@ -79,7 +83,10 @@ function fakeGitHubPut(sha: string = "newsha") {
 function makeRequest(body: unknown): Request {
   return new Request("http://localhost/api/add-note", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${TEST_API_KEY}`,
+    },
     body: JSON.stringify(body),
   });
 }

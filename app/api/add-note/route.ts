@@ -8,7 +8,8 @@
  * Output: { "noteId": "...", "linkedNotes": [...] }
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/src/auth";
 import { NOTES_DIR } from "@/src/config";
 import { createNote, serializeNote, noteFilePath } from "@/src/note";
 import { createOpenAIProvider, embedNote } from "@/src/embeddings";
@@ -23,8 +24,11 @@ import {
 } from "@/src/github";
 import type { NoteLink } from "@/types";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = verifyAuth(request);
+    if (!auth.ok) return auth.response!;
+
     const body = (await request.json()) as { content?: string };
 
     if (!body.content || typeof body.content !== "string" || !body.content.trim()) {

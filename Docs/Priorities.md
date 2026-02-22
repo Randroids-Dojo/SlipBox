@@ -6,7 +6,7 @@ Implementation roadmap for SlipBox Phase 1: manual note ingestion + auto-linking
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10). The full note ingestion and auto-linking pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. 82 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication. The full note ingestion and auto-linking pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 90 unit and integration tests pass.
 
 **Phase 1 is complete.** The deferred items below are targets for Phase 2+.
 
@@ -142,6 +142,20 @@ Batch recomputation of all links.
 - [x] Integration test with mocked GitHub (3 tests via vitest)
 
 **Done when:** Calling link-pass produces a correct backlink graph for all existing notes.
+
+---
+
+## API Authentication ✓
+
+Protect inbound endpoints so only authorized clients (e.g. your ChatGPT) can call them.
+
+- [x] `SLIPBOX_API_KEY` environment variable in config (lazy-validated)
+- [x] `src/auth.ts` — `verifyAuth()` checks `Authorization: Bearer <key>` header
+- [x] Constant-time token comparison to prevent timing attacks
+- [x] Clear error responses: 401 for missing/malformed header, 403 for wrong key
+- [x] Unit tests (8 tests via vitest)
+
+**Done when:** Requests without a valid Bearer token are rejected before reaching any business logic.
 
 ---
 

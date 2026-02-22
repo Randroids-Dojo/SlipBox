@@ -6,7 +6,8 @@
  * commits the updated index to PrivateBox.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/src/auth";
 import { findMatches, matchesToLinks } from "@/src/similarity";
 import { rebuildBacklinks } from "@/src/graph";
 import {
@@ -15,8 +16,11 @@ import {
   writeBacklinksIndex,
 } from "@/src/github";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const auth = verifyAuth(request);
+    if (!auth.ok) return auth.response!;
+
     // 1. Fetch current embeddings and backlinks indexes
     const [embResult, blResult] = await Promise.all([
       readEmbeddingsIndex(),

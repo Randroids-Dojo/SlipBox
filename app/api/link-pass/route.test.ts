@@ -5,13 +5,17 @@ import { POST } from "./route";
 // Environment setup
 // ---------------------------------------------------------------------------
 
+const TEST_API_KEY = "sk-test-slipbox-key";
+
 beforeEach(() => {
+  process.env.SLIPBOX_API_KEY = TEST_API_KEY;
   process.env.GITHUB_TOKEN = "ghp_test_token";
   process.env.PRIVATEBOX_OWNER = "test-owner";
   process.env.PRIVATEBOX_REPO = "test-repo";
 });
 
 afterEach(() => {
+  delete process.env.SLIPBOX_API_KEY;
   delete process.env.GITHUB_TOKEN;
   delete process.env.PRIVATEBOX_OWNER;
   delete process.env.PRIVATEBOX_REPO;
@@ -60,6 +64,17 @@ function fakeGitHubPut(sha: string = "newsha") {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeRequest(): Request {
+  return new Request("http://localhost/api/link-pass", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${TEST_API_KEY}` },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -71,7 +86,7 @@ describe("POST /api/link-pass", () => {
       // Read backlinks.json → 404
       .mockResolvedValueOnce(fakeGitHub404());
 
-    const response = await POST();
+    const response = await POST(makeRequest());
     expect(response.status).toBe(200);
 
     const json = await response.json();
@@ -98,7 +113,7 @@ describe("POST /api/link-pass", () => {
       // Write backlinks.json
       .mockResolvedValueOnce(fakeGitHubPut("bl-sha"));
 
-    const response = await POST();
+    const response = await POST(makeRequest());
     expect(response.status).toBe(200);
 
     const json = await response.json();
@@ -146,7 +161,7 @@ describe("POST /api/link-pass", () => {
       // Still writes backlinks (empty)
       .mockResolvedValueOnce(fakeGitHubPut());
 
-    const response = await POST();
+    const response = await POST(makeRequest());
     expect(response.status).toBe(200);
 
     const json = await response.json();
