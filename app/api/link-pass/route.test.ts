@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { NextRequest } from "next/server";
 import { POST } from "./route";
 
 // ---------------------------------------------------------------------------
@@ -67,8 +68,8 @@ function fakeGitHubPut(sha: string = "newsha") {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRequest(): Request {
-  return new Request("http://localhost/api/link-pass", {
+function makeRequest(): NextRequest {
+  return new NextRequest("http://localhost/api/link-pass", {
     method: "POST",
     headers: { Authorization: `Bearer ${TEST_API_KEY}` },
   });

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { NextRequest } from "next/server";
 import { POST } from "./route";
 
 // ---------------------------------------------------------------------------
@@ -80,8 +81,8 @@ function fakeGitHubPut(sha: string = "newsha") {
   } as unknown as Response;
 }
 
-function makeRequest(body: unknown): Request {
-  return new Request("http://localhost/api/add-note", {
+function makeRequest(body: unknown): NextRequest {
+  return new NextRequest("http://localhost/api/add-note", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

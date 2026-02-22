@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/src/auth";
-import { findMatches, matchesToLinks } from "@/src/similarity";
+import { findMatches } from "@/src/similarity";
 import { rebuildBacklinks } from "@/src/graph";
 import {
   readEmbeddingsIndex,
