@@ -6,9 +6,9 @@ Implementation roadmap for SlipBox Phase 1: manual note ingestion + auto-linking
 
 ## Current Status
 
-**Completed:** Priorities 1-3 (scaffolding + types + config). The Next.js app is deployed on Vercel with a health-check endpoint. All tunables are centralized in `src/config.ts`.
+**Completed:** Priorities 1-4 (scaffolding + types + config + note module). The Next.js app is deployed on Vercel with a health-check endpoint. All tunables are centralized in `src/config.ts`. The note module handles ID generation, content normalization, validation, and serialization with 21 unit tests.
 
-**Next up:** Priorities 4-6 are pure logic modules with no external dependencies on each other. They form the engine core and can be built in sequence:
+**Next up:** Priorities 5-6 are pure logic modules with no external dependencies on each other. They form the remaining engine core and can be built in sequence:
 
 | Priority | Module | What it does |
 |----------|--------|-------------|
@@ -30,7 +30,7 @@ Finally, Priorities 9-10 wire everything into API routes:
 | **9** | `app/api/add-note/route.ts` | Full pipeline: create note, embed, link, commit |
 | **10** | `app/api/link-pass/route.ts` | Batch recompute all similarity links |
 
-**Recommended next move:** Start with Priority 4 (Note Module) — it depends only on types and config, both of which are complete.
+**Recommended next move:** Start with Priority 5 (Embedding Module) — it depends only on types and config, both of which are complete.
 
 ---
 
@@ -69,13 +69,15 @@ Centralize tunables so nothing is hardcoded in logic.
 
 ---
 
-## Priority 4 — Note Module
+## Priority 4 — Note Module ✓
 
 Handle note creation independent of storage.
 
-- [ ] `src/note.ts` — Generate unique note ID (timestamp + hash)
-- [ ] Normalize content to atomic note format (frontmatter + body)
-- [ ] Validate note structure
+- [x] `src/note.ts` — Generate unique note ID (timestamp + hash)
+- [x] Normalize content to atomic note format (frontmatter + body)
+- [x] Validate note structure
+- [x] Serialize note to markdown with YAML frontmatter
+- [x] Unit tests (21 tests via vitest)
 
 **Done when:** Given raw content string, produces a well-formed note object.
 
