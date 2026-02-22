@@ -131,3 +131,31 @@ export const BACKLINKS_INDEX_PATH = optionalEnv(
   "BACKLINKS_INDEX_PATH",
   "index/backlinks.json",
 );
+
+/** Path to the clusters index file. */
+export const CLUSTERS_INDEX_PATH = optionalEnv(
+  "CLUSTERS_INDEX_PATH",
+  "index/clusters.json",
+);
+
+// ---------------------------------------------------------------------------
+// Clustering
+// ---------------------------------------------------------------------------
+
+/** Minimum number of clusters for k-means (floor). */
+export const MIN_CLUSTERS = optionalNumericEnv("MIN_CLUSTERS", 2);
+
+/** Maximum number of clusters for k-means (ceiling). */
+export const MAX_CLUSTERS = optionalNumericEnv("MAX_CLUSTERS", 20);
+
+/** Maximum iterations for k-means convergence. */
+export const KMEANS_MAX_ITERATIONS = optionalNumericEnv(
+  "KMEANS_MAX_ITERATIONS",
+  50,
+);
+
+/** Minimum number of notes required to run clustering. */
+export const MIN_NOTES_FOR_CLUSTERING = optionalNumericEnv(
+  "MIN_NOTES_FOR_CLUSTERING",
+  3,
+);

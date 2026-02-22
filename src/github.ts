@@ -6,9 +6,10 @@
  * are JSON files committed alongside them.
  */
 
-import type { BacklinksIndex, EmbeddingsIndex } from "@/types";
+import type { BacklinksIndex, ClustersIndex, EmbeddingsIndex } from "@/types";
 import {
   BACKLINKS_INDEX_PATH,
+  CLUSTERS_INDEX_PATH,
   EMBEDDINGS_INDEX_PATH,
   GITHUB_API_BASE,
   getGitHubToken,
@@ -211,6 +212,42 @@ export async function writeBacklinksIndex(
 ): Promise<string> {
   return writeFile({
     path: BACKLINKS_INDEX_PATH,
+    content: JSON.stringify(index, null, 2) + "\n",
+    message,
+    sha: sha ?? undefined,
+  });
+}
+
+/** Empty clusters index for bootstrapping. */
+function emptyClustersIndex(): ClustersIndex {
+  return { clusters: {}, computedAt: new Date().toISOString() };
+}
+
+/**
+ * Read the clusters index from PrivateBox.
+ * Returns an empty index if the file does not yet exist.
+ */
+export async function readClustersIndex(): Promise<{
+  index: ClustersIndex;
+  sha: string | null;
+}> {
+  const file = await readFile(CLUSTERS_INDEX_PATH);
+  if (!file) {
+    return { index: emptyClustersIndex(), sha: null };
+  }
+  return { index: JSON.parse(file.content) as ClustersIndex, sha: file.sha };
+}
+
+/**
+ * Write the clusters index to PrivateBox.
+ */
+export async function writeClustersIndex(
+  index: ClustersIndex,
+  sha: string | null,
+  message: string = "Update clusters index",
+): Promise<string> {
+  return writeFile({
+    path: CLUSTERS_INDEX_PATH,
     content: JSON.stringify(index, null, 2) + "\n",
     message,
     sha: sha ?? undefined,

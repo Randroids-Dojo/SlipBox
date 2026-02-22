@@ -1,14 +1,14 @@
 # Next Priorities
 
-Implementation roadmap for SlipBox Phase 1: manual note ingestion + auto-linking.
+Implementation roadmap for SlipBox.
 
 ---
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication. The full note ingestion and auto-linking pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 90 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, and Phase 2 Priority 11 (cluster-pass). The full note ingestion, auto-linking, and semantic clustering pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. The `POST /api/cluster-pass` endpoint clusters the embedding space using k-means and commits cluster metadata to PrivateBox. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 117 unit and integration tests pass.
 
-**Phase 1 is complete.** The deferred items below are targets for Phase 2+.
+**Phase 1 is complete.** Phase 2 is in progress.
 
 ---
 
@@ -159,11 +159,46 @@ Protect inbound endpoints so only authorized clients (e.g. your ChatGPT) can cal
 
 ---
 
+## Phase 2 — Clustering & Tension Detection
+
+---
+
+## Priority 11 — Cluster Module ✓
+
+Pure k-means clustering of the embedding space, no external dependencies.
+
+- [x] `types/cluster.ts` — `Cluster`, `ClustersIndex` type definitions
+- [x] `src/cluster.ts` — k-means++ initialization, k-means algorithm, automatic K selection via sqrt(n/2) heuristic
+- [x] `squaredDistance()` — Euclidean distance for assignment step
+- [x] `chooseK()` — Automatic cluster count selection bounded by configurable min/max
+- [x] `clusterEmbeddings()` — High-level function: embeddings index → clusters index
+- [x] Config tunables: `CLUSTERS_INDEX_PATH`, `MIN_CLUSTERS`, `MAX_CLUSTERS`, `KMEANS_MAX_ITERATIONS`, `MIN_NOTES_FOR_CLUSTERING`
+- [x] Unit tests (22 tests via vitest)
+
+**Done when:** Given an embeddings index, produces semantically grouped clusters with centroids.
+
+---
+
+## Priority 12 — POST /api/cluster-pass ✓
+
+Cluster the embedding space and persist results.
+
+- [x] `app/api/cluster-pass/route.ts`
+- [x] Fetch all embeddings from PrivateBox
+- [x] Run k-means clustering (automatic K or user-specified `{ "k": N }`)
+- [x] Commit `clusters.json` to PrivateBox
+- [x] Return cluster summary: count, sizes, and note assignments
+- [x] GitHub integration: `readClustersIndex()`, `writeClustersIndex()` helpers
+- [x] Integration tests with mocked GitHub (5 tests via vitest)
+
+**Done when:** Calling cluster-pass produces and persists a valid clusters index.
+
+---
+
 ## Deferred (Phase 2+)
 
-These are documented in Plan.md but not targets for Phase 1:
+These are documented in Plan.md but not yet implemented:
 
-- `/api/cluster-pass` — cluster embedding space, create meta-notes
 - `/api/tension-pass` — detect semantic contradictions
 - Nightly scheduled passes
 - Emergent theme detection
