@@ -49,6 +49,9 @@ export function createOpenAIProvider(
         throw new Error("Cannot embed empty text");
       }
 
+      console.log("Embedding model:", model);
+      console.log("OpenAI key prefix:", apiKey?.slice(0, 6));
+
       const response = await fetch("https://api.openai.com/v1/embeddings", {
         method: "POST",
         headers: {
