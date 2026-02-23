@@ -146,6 +146,12 @@ index/
 
 ---
 
+## Roadmap
+
+See [Docs/Priorities.md](Docs/Priorities.md) for the full implementation roadmap and phase status.
+
+---
+
 ## Guiding Principles
 
 - Engine is public. Knowledge is private.
