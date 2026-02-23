@@ -34,3 +34,9 @@ export interface ClustersIndex {
   /** ISO-8601 timestamp of when the clustering was last computed. */
   computedAt: string;
 }
+
+/** Create an empty clusters index for bootstrapping. */
+export const emptyClustersIndex = (): ClustersIndex => ({
+  clusters: {},
+  computedAt: new Date().toISOString(),
+});

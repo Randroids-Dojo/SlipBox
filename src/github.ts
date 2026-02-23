@@ -6,7 +6,18 @@
  * are JSON files committed alongside them.
  */
 
-import type { BacklinksIndex, ClustersIndex, EmbeddingsIndex, TensionsIndex } from "@/types";
+import {
+  type BacklinksIndex,
+  type ClustersIndex,
+  type EmbeddingsIndex,
+  type NoteEmbedding,
+  type NoteId,
+  type TensionsIndex,
+  emptyBacklinksIndex,
+  emptyClustersIndex,
+  emptyEmbeddingsIndex,
+  emptyTensionsIndex,
+} from "@/types";
 import {
   BACKLINKS_INDEX_PATH,
   CLUSTERS_INDEX_PATH,
@@ -17,6 +28,21 @@ import {
   getPrivateBoxOwner,
   getPrivateBoxRepo,
 } from "./config";
+
+// ---------------------------------------------------------------------------
+// Errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when GitHub returns 409 Conflict, meaning the SHA provided to a PUT
+ * was stale — another write happened between the read and write.
+ */
+export class GitHubConflictError extends Error {
+  constructor(path: string) {
+    super(`GitHub conflict (stale SHA) for ${path}`);
+    this.name = "GitHubConflictError";
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -133,6 +159,9 @@ export async function writeFile(options: WriteFileOptions): Promise<string> {
   });
 
   if (!response.ok) {
+    if (response.status === 409) {
+      throw new GitHubConflictError(options.path);
+    }
     const text = await response.text();
     throw new Error(
       `GitHub write failed for ${options.path} (${response.status}): ${text}`,
@@ -146,16 +175,6 @@ export async function writeFile(options: WriteFileOptions): Promise<string> {
 // ---------------------------------------------------------------------------
 // Index helpers
 // ---------------------------------------------------------------------------
-
-/** Empty embeddings index for bootstrapping. */
-function emptyEmbeddingsIndex(): EmbeddingsIndex {
-  return { embeddings: {} };
-}
-
-/** Empty backlinks index for bootstrapping. */
-function emptyBacklinksIndex(): BacklinksIndex {
-  return { links: {} };
-}
 
 /**
  * Read the embeddings index from PrivateBox.
@@ -219,11 +238,6 @@ export async function writeBacklinksIndex(
   });
 }
 
-/** Empty clusters index for bootstrapping. */
-function emptyClustersIndex(): ClustersIndex {
-  return { clusters: {}, computedAt: new Date().toISOString() };
-}
-
 /**
  * Read the clusters index from PrivateBox.
  * Returns an empty index if the file does not yet exist.
@@ -255,11 +269,6 @@ export async function writeClustersIndex(
   });
 }
 
-/** Empty tensions index for bootstrapping. */
-function emptyTensionsIndex(): TensionsIndex {
-  return { tensions: {}, computedAt: new Date().toISOString() };
-}
-
 /**
  * Read the tensions index from PrivateBox.
  * Returns an empty index if the file does not yet exist.
@@ -289,4 +298,90 @@ export async function writeTensionsIndex(
     message,
     sha: sha ?? undefined,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Optimistic-concurrency index update
+// ---------------------------------------------------------------------------
+
+const MAX_UPDATE_ATTEMPTS = 5;
+
+/**
+ * Atomically read-mutate-write any JSON index file with optimistic concurrency.
+ *
+ * Re-fetches the file from GitHub before every write attempt, then retries on
+ * 409 Conflict. Non-conflict errors (auth, network, 5xx) are rethrown
+ * immediately without retrying.
+ *
+ * @param path    - Repo-relative path to the JSON file (e.g. "index/embeddings.json").
+ * @param empty   - Factory that returns an empty index when the file does not yet exist.
+ * @param mutate  - Applies the desired change to the parsed index in place.
+ * @param message - Git commit message used for the write.
+ */
+export async function updateJsonFileWithRetry<T>(
+  path: string,
+  empty: () => T,
+  mutate: (index: T) => void,
+  message: string,
+): Promise<void> {
+  for (let attempt = 1; attempt <= MAX_UPDATE_ATTEMPTS; attempt++) {
+    const file = await readFile(path);
+    const index: T = file ? (JSON.parse(file.content) as T) : empty();
+    const sha = file?.sha ?? null;
+
+    mutate(index);
+
+    try {
+      console.log(
+        JSON.stringify({ event: "index_update_attempt", attempt, path }),
+      );
+      await writeFile({
+        path,
+        content: JSON.stringify(index, null, 2) + "\n",
+        message,
+        sha: sha ?? undefined,
+      });
+      console.log(
+        JSON.stringify({ event: "index_update_success", attempt, path }),
+      );
+      return;
+    } catch (err) {
+      if (!(err instanceof GitHubConflictError)) {
+        throw err;
+      }
+      if (attempt < MAX_UPDATE_ATTEMPTS) {
+        const delayMs = 50 + Math.floor(Math.random() * 100);
+        console.log(
+          JSON.stringify({
+            event: "index_update_conflict",
+            attempt,
+            path,
+            retryAfterMs: delayMs,
+          }),
+        );
+        await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  throw new Error(
+    `Failed to update "${path}" after ${MAX_UPDATE_ATTEMPTS} attempts`,
+  );
+}
+
+/**
+ * Atomically upsert a single embedding entry in the embeddings index.
+ * Thin wrapper around updateJsonFileWithRetry.
+ */
+export async function upsertEmbeddingWithRetry(
+  noteId: NoteId,
+  embedding: NoteEmbedding,
+  message: string = `Update embeddings: add ${noteId}`,
+): Promise<void> {
+  return updateJsonFileWithRetry<EmbeddingsIndex>(
+    EMBEDDINGS_INDEX_PATH,
+    emptyEmbeddingsIndex,
+    (index) => { index.embeddings[noteId] = embedding; },
+    message,
+  );
 }

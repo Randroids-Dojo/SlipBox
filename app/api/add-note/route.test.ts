@@ -113,23 +113,28 @@ describe("POST /api/add-note", () => {
   it("creates a note with no prior notes (bootstrapping)", async () => {
     // The pipeline will:
     // 1. Call OpenAI for embedding
-    // 2. Read embeddings.json (404 → empty)
-    // 3. Read backlinks.json (404 → empty)
-    // 4. Write note file, embeddings.json, backlinks.json
+    // 2. Read embeddings.json (404 → empty) — similarity pass
+    // 3. Write note file          ─┐ concurrent
+    // 4. Read backlinks.json       ├ (note PUT fires first, then backlinks GET)
+    // 5. Write backlinks.json     ─┘
+    // 6. Read embeddings.json (404 → empty) — upsert re-fetch
+    // 7. Write embeddings.json — upsert write
 
     fetchSpy
       // 1. OpenAI embedding call
       .mockResolvedValueOnce(fakeOpenAIEmbeddingResponse())
-      // 2. Read embeddings.json → 404
+      // 2. Read embeddings.json → 404 (similarity pass)
       .mockResolvedValueOnce(fakeGitHub404())
-      // 3. Read backlinks.json → 404
-      .mockResolvedValueOnce(fakeGitHub404())
-      // 4. Write note file
+      // 3. Write note file
       .mockResolvedValueOnce(fakeGitHubPut("note-sha"))
-      // 5. Write embeddings.json
-      .mockResolvedValueOnce(fakeGitHubPut("emb-sha"))
-      // 6. Write backlinks.json
-      .mockResolvedValueOnce(fakeGitHubPut("bl-sha"));
+      // 4. Read backlinks.json → 404 (backlinks retry-read)
+      .mockResolvedValueOnce(fakeGitHub404())
+      // 5. Write backlinks.json
+      .mockResolvedValueOnce(fakeGitHubPut("bl-sha"))
+      // 6. Read embeddings.json (upsert re-fetch) → 404
+      .mockResolvedValueOnce(fakeGitHub404())
+      // 7. Write embeddings.json (upsert write)
+      .mockResolvedValueOnce(fakeGitHubPut("emb-sha"));
 
     const response = await POST(makeRequest({ content: "Agents shine when ambiguity exists." }));
     expect(response.status).toBe(200);
@@ -142,7 +147,7 @@ describe("POST /api/add-note", () => {
     const openaiCall = fetchSpy.mock.calls[0];
     expect(openaiCall[0]).toBe("https://api.openai.com/v1/embeddings");
 
-    // Verify 3 write calls were made (note + 2 indexes)
+    // Verify 3 write calls were made (note + backlinks + embeddings)
     const writeCalls = fetchSpy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
@@ -165,15 +170,21 @@ describe("POST /api/add-note", () => {
     fetchSpy
       // 1. OpenAI embedding
       .mockResolvedValueOnce(fakeOpenAIEmbeddingResponse())
-      // 2. Read embeddings.json (has existing note)
+      // 2. Read embeddings.json (has existing note) — similarity pass
       .mockResolvedValueOnce(
         fakeGitHubContents(JSON.stringify(existingEmbeddings), "emb-sha"),
       )
-      // 3. Read backlinks.json → 404
+      // 3. Write note file
+      .mockResolvedValueOnce(fakeGitHubPut())
+      // 4. Read backlinks.json → 404 (backlinks retry-read)
       .mockResolvedValueOnce(fakeGitHub404())
-      // 4-6. Three writes
+      // 5. Write backlinks.json
       .mockResolvedValueOnce(fakeGitHubPut())
-      .mockResolvedValueOnce(fakeGitHubPut())
+      // 6. Read embeddings.json (upsert re-fetch)
+      .mockResolvedValueOnce(
+        fakeGitHubContents(JSON.stringify(existingEmbeddings), "emb-sha-2"),
+      )
+      // 7. Write embeddings.json (upsert write)
       .mockResolvedValueOnce(fakeGitHubPut());
 
     const response = await POST(

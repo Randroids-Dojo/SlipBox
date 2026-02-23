@@ -40,3 +40,9 @@ export interface TensionsIndex {
   /** ISO-8601 timestamp of when tensions were last computed. */
   computedAt: string;
 }
+
+/** Create an empty tensions index for bootstrapping. */
+export const emptyTensionsIndex = (): TensionsIndex => ({
+  tensions: {},
+  computedAt: new Date().toISOString(),
+});

@@ -16,3 +16,6 @@ import type { NoteId, NoteLink } from "./note";
 export interface BacklinksIndex {
   links: Record<NoteId, NoteLink[]>;
 }
+
+/** Create an empty backlinks index for bootstrapping. */
+export const emptyBacklinksIndex = (): BacklinksIndex => ({ links: {} });

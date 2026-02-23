@@ -6,6 +6,9 @@ import {
   writeEmbeddingsIndex,
   readBacklinksIndex,
   writeBacklinksIndex,
+  updateJsonFileWithRetry,
+  upsertEmbeddingWithRetry,
+  GitHubConflictError,
 } from "./github";
 
 // ---------------------------------------------------------------------------
@@ -162,7 +165,7 @@ describe("writeFile", () => {
     expect(body.sha).toBe("oldsha789");
   });
 
-  it("throws on API errors", async () => {
+  it("throws GitHubConflictError on 409 Conflict", async () => {
     fetchSpy.mockResolvedValueOnce(fakeErrorResponse(409, "Conflict"));
 
     await expect(
@@ -172,7 +175,19 @@ describe("writeFile", () => {
         message: "msg",
         sha: "stale",
       }),
-    ).rejects.toThrow("GitHub write failed for notes/test.md (409): Conflict");
+    ).rejects.toBeInstanceOf(GitHubConflictError);
+  });
+
+  it("throws a generic error on other API errors", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeErrorResponse(500, "Server Error"));
+
+    await expect(
+      writeFile({
+        path: "notes/test.md",
+        content: "content",
+        message: "msg",
+      }),
+    ).rejects.toThrow("GitHub write failed for notes/test.md (500): Server Error");
   });
 });
 
@@ -269,5 +284,198 @@ describe("writeBacklinksIndex", () => {
     const sha = await writeBacklinksIndex({ links: {} }, "old-sha");
 
     expect(sha).toBe("new-bl-sha");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateJsonFileWithRetry
+// ---------------------------------------------------------------------------
+
+type SimpleIndex = { items: Record<string, number> };
+const TEST_PATH = "test/data.json";
+const emptySimple = (): SimpleIndex => ({ items: {} });
+
+describe("updateJsonFileWithRetry", () => {
+  it("GETs then PUTs, and the PUT body contains the mutated content", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(fakeContentsResponse(JSON.stringify({ items: {} }), "sha-1"))
+      .mockResolvedValueOnce(fakePutResponse("sha-2"));
+
+    await updateJsonFileWithRetry<SimpleIndex>(
+      TEST_PATH,
+      emptySimple,
+      (idx) => { idx.items["x"] = 42; },
+      "test commit",
+    );
+
+    const [getCall, putCall] = fetchSpy.mock.calls as [string, RequestInit][];
+    expect((getCall[1] as RequestInit).method).toBe("GET");
+    expect((putCall[1] as RequestInit).method).toBe("PUT");
+
+    const putBody = JSON.parse((putCall[1] as RequestInit).body as string);
+    const written = JSON.parse(Buffer.from(putBody.content, "base64").toString("utf-8"));
+    expect(written.items["x"]).toBe(42);
+  });
+
+  it("uses the empty factory when the file does not exist", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(fake404Response())
+      .mockResolvedValueOnce(fakePutResponse("sha-1"));
+
+    await updateJsonFileWithRetry<SimpleIndex>(
+      TEST_PATH,
+      emptySimple,
+      (idx) => { idx.items["new"] = 1; },
+      "bootstrap",
+    );
+
+    const putBody = JSON.parse(
+      (fetchSpy.mock.calls[1] as [string, RequestInit])[1].body as string,
+    );
+    // No sha field when creating a new file
+    expect(putBody.sha).toBeUndefined();
+    const written = JSON.parse(Buffer.from(putBody.content, "base64").toString("utf-8"));
+    expect(written.items["new"]).toBe(1);
+  });
+
+  it("re-fetches on 409 and uses the new SHA on the retry", async () => {
+    const initial = JSON.stringify({ items: {} });
+    fetchSpy
+      .mockResolvedValueOnce(fakeContentsResponse(initial, "sha-1"))         // read #1
+      .mockResolvedValueOnce({ ok: false, status: 409, text: async () => "conflict" } as unknown as Response) // write #1 → conflict
+      .mockResolvedValueOnce(fakeContentsResponse(initial, "sha-2"))         // read #2
+      .mockResolvedValueOnce(fakePutResponse("sha-3"));                      // write #2 → success
+
+    await updateJsonFileWithRetry<SimpleIndex>(TEST_PATH, emptySimple, () => {}, "msg");
+
+    const puts = fetchSpy.mock.calls.filter(
+      (c: unknown[]) => (c[1] as RequestInit)?.method === "PUT",
+    ) as [string, RequestInit][];
+    expect(puts).toHaveLength(2);
+    expect(JSON.parse(puts[0][1].body as string).sha).toBe("sha-1");
+    expect(JSON.parse(puts[1][1].body as string).sha).toBe("sha-2");
+  });
+
+  it("throws immediately on non-conflict errors without retrying", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(fakeContentsResponse("{\"items\":{}}", "sha-1"))
+      .mockResolvedValueOnce(fakeErrorResponse(500, "Internal Server Error"));
+
+    await expect(
+      updateJsonFileWithRetry<SimpleIndex>(TEST_PATH, emptySimple, () => {}, "msg"),
+    ).rejects.toThrow("GitHub write failed");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2); // 1 read + 1 write, no retry
+  });
+
+  it("throws after exhausting all attempts", async () => {
+    for (let i = 0; i < 5; i++) {
+      fetchSpy
+        .mockResolvedValueOnce(fakeContentsResponse("{\"items\":{}}", `sha-${i}`))
+        .mockResolvedValueOnce({ ok: false, status: 409, text: async () => "conflict" } as unknown as Response);
+    }
+
+    await expect(
+      updateJsonFileWithRetry<SimpleIndex>(TEST_PATH, emptySimple, () => {}, "msg"),
+    ).rejects.toThrow(`Failed to update "${TEST_PATH}" after 5 attempts`);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(10); // 5 reads + 5 writes
+  });
+});
+
+// ---------------------------------------------------------------------------
+// upsertEmbeddingWithRetry
+// ---------------------------------------------------------------------------
+
+const fakeEmbedding = {
+  noteId: "note-1",
+  vector: [0.1, 0.2],
+  model: "text-embedding-3-small",
+  createdAt: "2026-02-23T00:00:00.000Z",
+};
+
+describe("upsertEmbeddingWithRetry", () => {
+  it("succeeds on the first attempt when there is no conflict", async () => {
+    const existingIndex = { embeddings: {} };
+    fetchSpy
+      .mockResolvedValueOnce(fakeContentsResponse(JSON.stringify(existingIndex), "sha-1")) // read
+      .mockResolvedValueOnce(fakePutResponse("sha-2")); // write
+
+    await upsertEmbeddingWithRetry("note-1", fakeEmbedding);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    // Verify the written content contains the embedding
+    const putBody = JSON.parse(
+      (fetchSpy.mock.calls[1] as [string, RequestInit])[1].body as string,
+    );
+    const written = JSON.parse(Buffer.from(putBody.content, "base64").toString("utf-8"));
+    expect(written.embeddings["note-1"].noteId).toBe("note-1");
+  });
+
+  it("retries after a 409 and succeeds on the second attempt", async () => {
+    const existingIndex = { embeddings: {} };
+    fetchSpy
+      .mockResolvedValueOnce(fakeContentsResponse(JSON.stringify(existingIndex), "sha-1")) // read attempt 1
+      .mockResolvedValueOnce({ ok: false, status: 409, text: async () => "conflict" } as unknown as Response) // write attempt 1 → conflict
+      .mockResolvedValueOnce(fakeContentsResponse(JSON.stringify(existingIndex), "sha-2")) // read attempt 2
+      .mockResolvedValueOnce(fakePutResponse("sha-3")); // write attempt 2 → success
+
+    await upsertEmbeddingWithRetry("note-1", fakeEmbedding);
+
+    // 2 reads + 2 writes = 4 fetch calls
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
+
+    // Second write used the re-fetched SHA
+    const putBody = JSON.parse(
+      (fetchSpy.mock.calls[3] as [string, RequestInit])[1].body as string,
+    );
+    expect(putBody.sha).toBe("sha-2");
+  });
+
+  it("is idempotent — overwrites an existing entry without duplicating it", async () => {
+    const updatedEmbedding = { ...fakeEmbedding, createdAt: "2026-02-24T00:00:00.000Z" };
+    const existingIndex = { embeddings: { "note-1": fakeEmbedding } };
+
+    fetchSpy
+      .mockResolvedValueOnce(fakeContentsResponse(JSON.stringify(existingIndex), "sha-1"))
+      .mockResolvedValueOnce(fakePutResponse("sha-2"));
+
+    await upsertEmbeddingWithRetry("note-1", updatedEmbedding);
+
+    const putBody = JSON.parse(
+      (fetchSpy.mock.calls[1] as [string, RequestInit])[1].body as string,
+    );
+    const written = JSON.parse(Buffer.from(putBody.content, "base64").toString("utf-8"));
+    expect(Object.keys(written.embeddings)).toHaveLength(1);
+    expect(written.embeddings["note-1"].createdAt).toBe("2026-02-24T00:00:00.000Z");
+  });
+
+  it("throws after exhausting all retry attempts", async () => {
+    const existingIndex = { embeddings: {} };
+    // 5 read + 5 write (all 409) cycles
+    for (let i = 0; i < 5; i++) {
+      fetchSpy
+        .mockResolvedValueOnce(fakeContentsResponse(JSON.stringify(existingIndex), `sha-${i}`))
+        .mockResolvedValueOnce({ ok: false, status: 409, text: async () => "conflict" } as unknown as Response);
+    }
+
+    await expect(upsertEmbeddingWithRetry("note-1", fakeEmbedding)).rejects.toThrow(
+      `Failed to update "index/embeddings.json" after 5 attempts`,
+    );
+  });
+
+  it("re-throws immediately on non-conflict errors", async () => {
+    const existingIndex = { embeddings: {} };
+    fetchSpy
+      .mockResolvedValueOnce(fakeContentsResponse(JSON.stringify(existingIndex), "sha-1"))
+      .mockResolvedValueOnce(fakeErrorResponse(500, "Internal Server Error"));
+
+    await expect(upsertEmbeddingWithRetry("note-1", fakeEmbedding)).rejects.toThrow(
+      "GitHub write failed",
+    );
+
+    // Only 1 read + 1 write, no retries
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });

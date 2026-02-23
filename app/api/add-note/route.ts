@@ -10,19 +10,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/src/auth";
-import { NOTES_DIR } from "@/src/config";
+import { BACKLINKS_INDEX_PATH, NOTES_DIR } from "@/src/config";
 import { createNote, serializeNote, noteFilePath } from "@/src/note";
 import { createOpenAIProvider, embedNote } from "@/src/embeddings";
 import { findMatches, matchesToLinks } from "@/src/similarity";
 import { applyMatches } from "@/src/graph";
 import {
   readEmbeddingsIndex,
-  writeEmbeddingsIndex,
-  readBacklinksIndex,
-  writeBacklinksIndex,
+  updateJsonFileWithRetry,
+  upsertEmbeddingWithRetry,
   writeFile,
 } from "@/src/github";
-import type { NoteLink } from "@/types";
+import { type BacklinksIndex, type NoteLink, emptyBacklinksIndex } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,11 +44,8 @@ export async function POST(request: NextRequest) {
     const provider = createOpenAIProvider();
     const embedding = await embedNote(note.id, note.content, provider);
 
-    // 3. Fetch current indexes from PrivateBox
-    const [embResult, blResult] = await Promise.all([
-      readEmbeddingsIndex(),
-      readBacklinksIndex(),
-    ]);
+    // 3. Fetch embeddings index for the similarity pass
+    const embResult = await readEmbeddingsIndex();
 
     // 4. Similarity pass — find matches above threshold
     const matches = findMatches(
@@ -63,13 +59,10 @@ export async function POST(request: NextRequest) {
     // 5. Attach links to the note
     note.links = links;
 
-    // 6. Update embeddings index
-    embResult.index.embeddings[note.id] = embedding;
-
-    // 7. Update backlinks index
-    applyMatches(blResult.index, note.id, links);
-
-    // 8. Commit all changes to PrivateBox
+    // 6. Commit note file and backlinks index concurrently.
+    //    The note write has no SHA dependency (new file) so it never conflicts.
+    //    The backlinks write uses optimistic-concurrency retry for the same
+    //    reason as embeddings: concurrent note additions race on the same file.
     const serialized = serializeNote(note);
     const path = noteFilePath(note.id, NOTES_DIR);
 
@@ -79,17 +72,21 @@ export async function POST(request: NextRequest) {
         content: serialized,
         message: `Add note ${note.id}`,
       }),
-      writeEmbeddingsIndex(
-        embResult.index,
-        embResult.sha,
-        `Update embeddings: add ${note.id}`,
-      ),
-      writeBacklinksIndex(
-        blResult.index,
-        blResult.sha,
+      updateJsonFileWithRetry<BacklinksIndex>(
+        BACKLINKS_INDEX_PATH,
+        emptyBacklinksIndex,
+        (idx) => applyMatches(idx, note.id, links),
         `Update backlinks: add ${note.id}`,
       ),
     ]);
+
+    // 7. Update embeddings index with optimistic-concurrency retry.
+    //    Separated from step 6 so a conflict here never rolls back the note.
+    await upsertEmbeddingWithRetry(
+      note.id,
+      embedding,
+      `Update embeddings: add ${note.id}`,
+    );
 
     return NextResponse.json({
       noteId: note.id,

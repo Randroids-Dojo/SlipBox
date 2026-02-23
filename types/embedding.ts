@@ -26,3 +26,6 @@ export interface EmbeddingsIndex {
   /** Map of note IDs to their embedding records. */
   embeddings: Record<NoteId, NoteEmbedding>;
 }
+
+/** Create an empty embeddings index for bootstrapping. */
+export const emptyEmbeddingsIndex = (): EmbeddingsIndex => ({ embeddings: {} });
