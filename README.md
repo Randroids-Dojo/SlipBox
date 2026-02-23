@@ -30,12 +30,17 @@ All endpoints require `Authorization: Bearer <SLIPBOX_API_KEY>`.
 Add a new atomic note. Runs the full pipeline: normalize → embed → similarity pass → link → commit.
 
 ```json
-// Request
+// Request — atomic note
 { "content": "Agents shine when ambiguity exists." }
 
+// Request — meta-note (AI-generated cluster summary)
+{ "content": "## Cluster: Agentic Systems\n\n...", "type": "meta" }
+
 // Response
-{ "noteId": "20260222T153045-a1b2c3d4", "linkedNotes": [{ "noteId": "...", "similarity": 0.91 }] }
+{ "noteId": "20260222T153045-a1b2c3d4", "type": null, "linkedNotes": [{ "noteId": "...", "similarity": 0.91 }] }
 ```
+
+Valid `type` values: `"meta"` (cluster summary), `"hypothesis"` (tension-derived research note). Omit for regular atomic notes.
 
 ### `POST /api/link-pass`
 

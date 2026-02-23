@@ -5,7 +5,7 @@
  * update links → commit all changes to PrivateBox.
  *
  * Input:  { "content": "...", "type": "meta" | "hypothesis" (optional) }
- * Output: { "noteId": "...", "linkedNotes": [...] }
+ * Output: { "noteId": "...", "type": "meta" | "hypothesis" | null, "linkedNotes": [...] }
  */
 
 import { NextRequest, NextResponse } from "next/server";
