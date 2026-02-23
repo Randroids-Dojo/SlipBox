@@ -265,6 +265,199 @@ and POST them back as tagged meta-notes without any OpenAI chat API calls.
 
 ---
 
+---
+
+## Phase 4 — Knowledge Evolution & Theory Discovery
+
+Phase 4 turns SlipBox from a structured repository into a self-evolving cognitive
+space: typed semantic edges, research hypothesis generation, staleness detection,
+an evolution timeline, structural gap analysis, advisory note refinements, and an
+interactive graph UI.
+
+### Architectural Decisions
+
+**A. LLM synthesis pattern stays the same.** GET-endpoint exposes structured data →
+local LLM agent reasons over it → POST-endpoint writes results back. No OpenAI Chat
+API calls server-side. Applies to relation typing, hypothesis generation, and
+refinement suggestions.
+
+**B. New index files in PrivateBox** (same pattern as existing indexes):
+- `index/relations.json` — typed semantic edges
+- `index/decay.json` — staleness scores
+- `index/refinements.json` — LLM-suggested note edits (advisory only)
+- `index/explorations.json` — structural gap suggestions
+- `index/snapshots.json` — append-only evolution timeline
+
+**C. Hard constraint preserved:** No automatic note rewriting. Refinements are
+suggestions only. Hypotheses are submitted as typed meta-notes via the existing
+`POST /api/add-note` (`type: hypothesis` in frontmatter).
+
+---
+
+## Priority 17 — Relation Types + RelationsIndex
+
+Define the semantic edge vocabulary and the index that stores typed links.
+
+- [ ] `types/relation.ts` — `RelationType`, `TypedLink`, `RelationsIndex` type definitions
+- [ ] `RelationType`: `'supports' | 'contradicts' | 'refines' | 'is-example-of' | 'contrasts-with'`
+- [ ] `TypedLink` — noteA, noteB, relationType, reason (LLM annotation, ~1 sentence), similarity, classifiedAt
+- [ ] `RelationsIndex` — keyed by `${noteA}:${noteB}` in canonical (smaller ID first) order
+- [ ] `src/relation.ts` — `canonicalKey()`, `upsertRelation()`, `getRelationsForNote()`, serialize/deserialize, `emptyRelationsIndex()`
+- [ ] `readRelationsIndex()`, `writeRelationsIndex()` GitHub helpers in `src/github.ts`
+- [ ] Unit tests (20+ via vitest) — serialization, canonical ordering, upsert semantics, filtering
+
+**Done when:** Types compile, module functions pass unit tests, GitHub helpers exist.
+
+---
+
+## Priority 18 — GET /api/link-data
+
+Expose linked note pairs with full note content for local LLM relation classification.
+
+- [ ] `app/api/link-data/route.ts`
+- [ ] Fetch backlinks + relations + note contents in parallel
+- [ ] Build pair list from backlinks, join existing relation types
+- [ ] Return `{ pairs[], pairCount, classifiedCount, computedAt }` — each pair includes noteA/noteB content + existing relation if any
+- [ ] `?unclassifiedOnly=true` query param to filter to unclassified pairs (incremental runs)
+- [ ] Integration tests (5+ via vitest)
+
+**Done when:** GET returns correct pair list; unclassifiedOnly filter works; note content is included.
+
+---
+
+## Priority 19 — POST /api/relations
+
+Accept typed relation records from a local LLM agent and persist them.
+
+- [ ] `app/api/relations/route.ts`
+- [ ] Accept `{ relations: [{ noteA, noteB, relationType, reason }] }`
+- [ ] Read current relations index → upsert each record (attach similarity from backlinks, classifiedAt timestamp) → commit
+- [ ] Validate: reject unknown relation types; reject pairs not in backlinks index
+- [ ] Return `{ updated, total }`
+- [ ] Integration tests (5+ via vitest)
+
+**Done when:** LLM agent can classify pairs from link-data and POST results; relations.json is updated correctly.
+
+---
+
+## Priority 20 — Decay Module + POST /api/decay-pass
+
+Pure-math staleness detection — no LLM, no external dependencies. Same pattern as tension detection.
+
+- [ ] `types/decay.ts` — `DecayRecord`, `DecayReason`, `DecayIndex` type definitions
+- [ ] `DecayReason`: `'no-links' | 'low-link-density' | 'cluster-outlier' | 'no-cluster'`
+- [ ] `src/decay.ts` — `computeDecay(embeddingsIndex, backlinksIndex, clustersIndex, config)` → `DecayIndex`
+- [ ] Scoring: `+0.4` no-links, `+0.2` low-link-density (< 2 links), `+0.3` cluster-outlier (similarity to centroid < threshold), `+0.1` no-cluster; capped at 1.0
+- [ ] Config tunables: `DECAY_INDEX_PATH`, `CLUSTER_OUTLIER_THRESHOLD` (default 0.70), `DECAY_SCORE_THRESHOLD` (default 0.3 — minimum score to include)
+- [ ] `app/api/decay-pass/route.ts` — fetch indexes → run decay → commit `decay.json` → return `{ staleCount, records[] }`
+- [ ] `readDecayIndex()`, `writeDecayIndex()` GitHub helpers
+- [ ] Unit tests (25+ via vitest) — each scoring component; integration tests (4+)
+
+**Done when:** decay-pass detects isolated, low-link, and outlier notes correctly; commits decay.json.
+
+---
+
+## Priority 21 — GET /api/hypothesis-data
+
+Expose tension pairs with cluster context so a local LLM can generate research hypotheses.
+
+- [ ] `app/api/hypothesis-data/route.ts`
+- [ ] Fetch tensions + clusters + note contents in parallel
+- [ ] Return `{ tensions[], tensionCount, computedAt }` — each tension includes full noteA/noteB content + cluster sibling notes
+- [ ] Local LLM generates hypothesis statement, 2–3 open questions, and cluster combination suggestions
+- [ ] Hypotheses submitted back as notes via existing `POST /api/add-note` with `type: hypothesis` frontmatter tag (no new storage format needed)
+- [ ] Integration tests (4+ via vitest)
+
+**Done when:** Endpoint returns tension + cluster context sufficient for a local LLM to generate and submit hypothesis notes.
+
+---
+
+## Priority 22 — Refinement Pass (GET + POST)
+
+Advisory-only note improvement suggestions from a local LLM. No automatic edits.
+
+- [ ] `types/refinement.ts` — `RefinementType`, `RefinementSuggestion`, `RefinementsIndex` type definitions
+- [ ] `RefinementType`: `'retitle' | 'split' | 'merge-suggest' | 'update'`
+- [ ] `RefinementSuggestion` — id, noteId, type, suggestion (proposed change), reason, relatedNoteIds (for merge suggestions), generatedAt
+- [ ] `app/api/refinement-data/route.ts` — expose clusters with full note content + decay records; optional `?clusterId=X` param
+- [ ] `app/api/refinements/route.ts` — accept suggestions array, upsert to `index/refinements.json` by noteId + type
+- [ ] `readRefinementsIndex()`, `writeRefinementsIndex()` GitHub helpers
+- [ ] Code comment constraint: "Suggestions only — SlipBox never modifies user notes automatically."
+- [ ] Integration tests (4+ via vitest)
+
+**Done when:** Suggestions are persisted and queryable; they do not touch note files.
+
+---
+
+## Priority 23 — Snapshot Module + Graph Analytics
+
+Append-only evolution timeline — one snapshot per nightly run.
+
+- [ ] `types/snapshot.ts` — `GraphSnapshot`, `SnapshotsIndex` type definitions
+- [ ] `GraphSnapshot` — id, capturedAt, noteCount, linkCount, clusterCount, tensionCount, decayCount, clusterSizes (clusterId → noteCount), avgLinksPerNote
+- [ ] `SnapshotsIndex` — append-only array ordered by capturedAt
+- [ ] `src/snapshot.ts` — `captureSnapshot(embeddingsIndex, backlinksIndex, clustersIndex, tensionsIndex, decayIndex)` → `GraphSnapshot`
+- [ ] `app/api/snapshot/route.ts` — fetch all indexes → compute snapshot → append to `index/snapshots.json` → return new snapshot
+- [ ] `app/api/analytics/route.ts` — return full snapshots array; optional `?since=ISO-DATE` param; include computed deltas between consecutive snapshots
+- [ ] `readSnapshotsIndex()`, `writeSnapshotsIndex()` GitHub helpers
+- [ ] Unit tests (15+ via vitest) — snapshot computation, delta calculation; integration tests (3+)
+
+**Done when:** Nightly runs accumulate a queryable daily timeline; analytics endpoint shows growth trajectory with deltas.
+
+---
+
+## Priority 24 — Exploration Pass (pure math)
+
+Structural gap detection — no LLM, no external dependencies.
+
+- [ ] `types/exploration.ts` — `ExplorationSuggestionType`, `ExplorationSuggestion`, `ExplorationsIndex` type definitions
+- [ ] `ExplorationSuggestionType`: `'orphan-note' | 'close-clusters' | 'structural-hole' | 'meta-note-missing'`
+- [ ] `src/exploration.ts` — `detectExplorations(embeddingsIndex, backlinksIndex, clustersIndex, relationsIndex, config)` → `ExplorationsIndex`
+- [ ] Detection logic:
+  - **orphan-note:** notes in embeddings index with zero backlinks
+  - **close-clusters:** cluster pairs with centroid cosine similarity > `CLOSE_CLUSTER_THRESHOLD` (default 0.85) — candidates for merge
+  - **structural-hole:** clusters with no typed relations to any note outside the cluster
+  - **meta-note-missing:** clusters where no member note has `type: meta` in frontmatter
+- [ ] Config tunables: `EXPLORATIONS_INDEX_PATH`, `CLOSE_CLUSTER_THRESHOLD`
+- [ ] `app/api/exploration-pass/route.ts` — fetch all indexes → run detection → commit `explorations.json` → return suggestion list
+- [ ] `readExplorationsIndex()`, `writeExplorationsIndex()` GitHub helpers
+- [ ] Unit tests (30+ via vitest) — each detection type; integration tests (4+)
+
+**Done when:** exploration-pass detects all four structural gap types and commits results.
+
+---
+
+## Priority 25 — Nightly Phase 4 Passes
+
+Extend the nightly GitHub Actions workflow to include Phase 4 passes.
+
+- [ ] `.github/workflows/nightly-passes.yml` — extend job chain: `link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot`
+- [ ] `decay-pass` and `exploration-pass` run in parallel (both depend on tension-pass, neither depends on the other)
+- [ ] `snapshot` runs last after all indexes are fresh
+- [ ] `workflow_dispatch` input to skip individual passes (for debugging)
+
+**Done when:** All Phase 4 passes run automatically each night; snapshots accumulate a daily timeline.
+
+---
+
+## Priority 26 — Graph Explorer UI
+
+Interactive visualization of the knowledge graph — the only Phase 4 frontend work.
+
+- [ ] `app/graph/page.tsx` — auth-gated route
+- [ ] `app/graph/GraphCanvas.tsx` — force-directed graph component
+- [ ] One new dependency: `react-force-graph-2d` (only external dep added in Phase 4)
+- [ ] Node encoding: size = link count, gray tint intensity = decay score
+- [ ] Edge encoding: color = relation type (green = supports, red = contradicts, blue = refines, yellow = contrasts-with, gray = unclassified)
+- [ ] Tension edges rendered as dashed lines (toggleable)
+- [ ] Click a node → sidebar: note title, cluster, decay reasons, refinement suggestions
+- [ ] Filter controls: by cluster, toggle meta-notes, toggle tensions
+- [ ] Data from existing endpoints: `/api/link-data`, `/api/theme-data`, `/api/analytics`
+
+**Done when:** Graph loads, renders typed edges with color coding, node sidebar shows note metadata.
+
+---
+
 ## Deferred (Phase 3+ continued)
 
 - Emergent theme detection (weekly cognitive summary)
