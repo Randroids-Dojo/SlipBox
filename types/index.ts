@@ -22,3 +22,6 @@ export { emptyClustersIndex } from "./cluster";
 
 export type { Tension, TensionsIndex } from "./tension";
 export { emptyTensionsIndex } from "./tension";
+
+export type { RelationType, TypedLink, RelationsIndex } from "./relation";
+export { RELATION_TYPES, emptyRelationsIndex } from "./relation";

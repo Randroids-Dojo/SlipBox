@@ -185,3 +185,13 @@ export const MIN_NOTES_FOR_TENSION = optionalNumericEnv(
   "MIN_NOTES_FOR_TENSION",
   4,
 );
+
+// ---------------------------------------------------------------------------
+// Relations
+// ---------------------------------------------------------------------------
+
+/** Path to the relations index file. */
+export const RELATIONS_INDEX_PATH = optionalEnv(
+  "RELATIONS_INDEX_PATH",
+  "index/relations.json",
+);

@@ -12,16 +12,19 @@ import {
   type EmbeddingsIndex,
   type NoteEmbedding,
   type NoteId,
+  type RelationsIndex,
   type TensionsIndex,
   emptyBacklinksIndex,
   emptyClustersIndex,
   emptyEmbeddingsIndex,
+  emptyRelationsIndex,
   emptyTensionsIndex,
 } from "@/types";
 import {
   BACKLINKS_INDEX_PATH,
   CLUSTERS_INDEX_PATH,
   EMBEDDINGS_INDEX_PATH,
+  RELATIONS_INDEX_PATH,
   TENSIONS_INDEX_PATH,
   GITHUB_API_BASE,
   getGitHubToken,
@@ -294,6 +297,37 @@ export async function writeTensionsIndex(
 ): Promise<string> {
   return writeFile({
     path: TENSIONS_INDEX_PATH,
+    content: JSON.stringify(index, null, 2) + "\n",
+    message,
+    sha: sha ?? undefined,
+  });
+}
+
+/**
+ * Read the relations index from PrivateBox.
+ * Returns an empty index if the file does not yet exist.
+ */
+export async function readRelationsIndex(): Promise<{
+  index: RelationsIndex;
+  sha: string | null;
+}> {
+  const file = await readFile(RELATIONS_INDEX_PATH);
+  if (!file) {
+    return { index: emptyRelationsIndex(), sha: null };
+  }
+  return { index: JSON.parse(file.content) as RelationsIndex, sha: file.sha };
+}
+
+/**
+ * Write the relations index to PrivateBox.
+ */
+export async function writeRelationsIndex(
+  index: RelationsIndex,
+  sha: string | null,
+  message: string = "Update relations index",
+): Promise<string> {
+  return writeFile({
+    path: RELATIONS_INDEX_PATH,
     content: JSON.stringify(index, null, 2) + "\n",
     message,
     sha: sha ?? undefined,

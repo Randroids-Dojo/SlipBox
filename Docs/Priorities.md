@@ -6,9 +6,9 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, and Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass). The full note ingestion, auto-linking, semantic clustering, and tension detection pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. The `POST /api/cluster-pass` endpoint clusters the embedding space using k-means and commits cluster metadata to PrivateBox. The `POST /api/tension-pass` endpoint detects semantic tensions — divergent note pairs within the same cluster — and commits the tensions index to PrivateBox. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 135 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priority 17 (relation types + RelationsIndex). The full note ingestion, auto-linking, semantic clustering, tension detection, and nightly automation pipeline is implemented. The relation module defines typed semantic edges (`supports`, `contradicts`, `refines`, `is-example-of`, `contrasts-with`) with canonical pair keying, upsert semantics, per-note filtering, and serialization. `readRelationsIndex()` and `writeRelationsIndex()` GitHub helpers and `RELATIONS_INDEX_PATH` config are in place. 181 unit and integration tests pass.
 
-**Phase 1 is complete.** Phase 2 is complete. Phase 3 is in progress.
+**Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
 ---
 
@@ -294,17 +294,17 @@ suggestions only. Hypotheses are submitted as typed meta-notes via the existing
 
 ---
 
-## Priority 17 — Relation Types + RelationsIndex
+## Priority 17 — Relation Types + RelationsIndex ✓
 
 Define the semantic edge vocabulary and the index that stores typed links.
 
-- [ ] `types/relation.ts` — `RelationType`, `TypedLink`, `RelationsIndex` type definitions
-- [ ] `RelationType`: `'supports' | 'contradicts' | 'refines' | 'is-example-of' | 'contrasts-with'`
-- [ ] `TypedLink` — noteA, noteB, relationType, reason (LLM annotation, ~1 sentence), similarity, classifiedAt
-- [ ] `RelationsIndex` — keyed by `${noteA}:${noteB}` in canonical (smaller ID first) order
-- [ ] `src/relation.ts` — `canonicalKey()`, `upsertRelation()`, `getRelationsForNote()`, serialize/deserialize, `emptyRelationsIndex()`
-- [ ] `readRelationsIndex()`, `writeRelationsIndex()` GitHub helpers in `src/github.ts`
-- [ ] Unit tests (20+ via vitest) — serialization, canonical ordering, upsert semantics, filtering
+- [x] `types/relation.ts` — `RelationType`, `TypedLink`, `RelationsIndex` type definitions
+- [x] `RelationType`: `'supports' | 'contradicts' | 'refines' | 'is-example-of' | 'contrasts-with'`
+- [x] `TypedLink` — noteA, noteB, relationType, reason (LLM annotation, ~1 sentence), similarity, classifiedAt
+- [x] `RelationsIndex` — keyed by `${noteA}:${noteB}` in canonical (smaller ID first) order
+- [x] `src/relation.ts` — `canonicalKey()`, `upsertRelation()`, `getRelationsForNote()`, serialize/deserialize, `emptyRelationsIndex()`
+- [x] `readRelationsIndex()`, `writeRelationsIndex()` GitHub helpers in `src/github.ts`
+- [x] Unit tests (27 via vitest) — serialization, canonical ordering, upsert semantics, filtering
 
 **Done when:** Types compile, module functions pass unit tests, GitHub helpers exist.
 
