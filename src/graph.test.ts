@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  addLink,
-  removeLink,
-  getLinks,
-  applyMatches,
-  deserializeBacklinks,
-  serializeBacklinks,
-  createEmptyBacklinksIndex,
-  rebuildBacklinks,
-} from "./graph";
+import { addLink, removeLink, getLinks, applyMatches, rebuildBacklinks } from "./graph";
+import { emptyBacklinksIndex } from "@/types";
 import type { BacklinksIndex } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -16,7 +8,7 @@ import type { BacklinksIndex } from "@/types";
 // ---------------------------------------------------------------------------
 
 function emptyIndex(): BacklinksIndex {
-  return createEmptyBacklinksIndex();
+  return emptyBacklinksIndex();
 }
 
 // ---------------------------------------------------------------------------
@@ -148,41 +140,6 @@ describe("applyMatches", () => {
 
     expect(index.links["note-a"]).toHaveLength(1);
     expect(index.links["note-a"][0].similarity).toBe(0.95);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Serialization
-// ---------------------------------------------------------------------------
-
-describe("serializeBacklinks", () => {
-  it("produces valid JSON with trailing newline", () => {
-    const index = emptyIndex();
-    addLink(index, "note-a", "note-b", 0.85);
-
-    const json = serializeBacklinks(index);
-
-    expect(json.endsWith("\n")).toBe(true);
-    expect(JSON.parse(json)).toEqual(index);
-  });
-});
-
-describe("deserializeBacklinks", () => {
-  it("parses a JSON string", () => {
-    const data: BacklinksIndex = {
-      links: { "note-a": [{ targetId: "note-b", similarity: 0.9 }] },
-    };
-    const result = deserializeBacklinks(JSON.stringify(data));
-
-    expect(result).toEqual(data);
-  });
-
-  it("returns empty index for null input", () => {
-    expect(deserializeBacklinks(null)).toEqual({ links: {} });
-  });
-
-  it("returns empty index for empty string", () => {
-    expect(deserializeBacklinks("")).toEqual({ links: {} });
   });
 });
 

@@ -4,11 +4,8 @@ import {
   isValidRelationType,
   upsertRelation,
   getRelationsForNote,
-  serializeRelationsIndex,
-  deserializeRelationsIndex,
   emptyRelationsIndex,
 } from "./relation";
-import type { RelationsIndex } from "@/types";
 
 // ---------------------------------------------------------------------------
 // canonicalKey
@@ -206,55 +203,6 @@ describe("getRelationsForNote", () => {
   it("returns an empty array for an empty index", () => {
     const index = emptyRelationsIndex();
     expect(getRelationsForNote(index, "note-a")).toHaveLength(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Serialization
-// ---------------------------------------------------------------------------
-
-describe("serializeRelationsIndex / deserializeRelationsIndex", () => {
-  it("round-trips an empty index", () => {
-    const index = emptyRelationsIndex();
-    const json = serializeRelationsIndex(index);
-    const parsed = deserializeRelationsIndex(json);
-
-    expect(parsed.relations).toEqual({});
-    expect(parsed.updatedAt).toBe(index.updatedAt);
-  });
-
-  it("round-trips an index with relations", () => {
-    const index = emptyRelationsIndex();
-    upsertRelation(
-      index,
-      "note-a",
-      "note-b",
-      "is-example-of",
-      "A is an instance of B",
-      0.88,
-      "2026-01-01T00:00:00.000Z",
-    );
-
-    const parsed = deserializeRelationsIndex(serializeRelationsIndex(index));
-    const link = parsed.relations["note-a:note-b"];
-
-    expect(link.noteA).toBe("note-a");
-    expect(link.noteB).toBe("note-b");
-    expect(link.relationType).toBe("is-example-of");
-    expect(link.reason).toBe("A is an instance of B");
-    expect(link.similarity).toBeCloseTo(0.88);
-    expect(link.classifiedAt).toBe("2026-01-01T00:00:00.000Z");
-  });
-
-  it("serialized JSON ends with a newline", () => {
-    const json = serializeRelationsIndex(emptyRelationsIndex());
-    expect(json.endsWith("\n")).toBe(true);
-  });
-
-  it("serialized JSON is valid JSON", () => {
-    const index = emptyRelationsIndex();
-    upsertRelation(index, "note-x", "note-y", "contrasts-with", "r", 0.8);
-    expect(() => JSON.parse(serializeRelationsIndex(index))).not.toThrow();
   });
 });
 

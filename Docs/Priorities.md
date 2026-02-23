@@ -6,7 +6,7 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priority 17 (relation types + RelationsIndex). The full note ingestion, auto-linking, semantic clustering, tension detection, and nightly automation pipeline is implemented. The relation module defines typed semantic edges (`supports`, `contradicts`, `refines`, `is-example-of`, `contrasts-with`) with canonical pair keying, upsert semantics, per-note filtering, and serialization. `readRelationsIndex()` and `writeRelationsIndex()` GitHub helpers and `RELATIONS_INDEX_PATH` config are in place. 181 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-18 (relation types + RelationsIndex, GET /api/link-data). The full note ingestion, auto-linking, semantic clustering, tension detection, and nightly automation pipeline is implemented. The relation module defines typed semantic edges (`supports`, `contradicts`, `refines`, `is-example-of`, `contrasts-with`) with canonical pair keying, upsert semantics, and per-note filtering. `readRelationsIndex()` and `writeRelationsIndex()` GitHub helpers and `RELATIONS_INDEX_PATH` config are in place. GET /api/link-data exposes deduplicated backlink pairs with full note content and existing relation classifications for local LLM relation typing; supports `?unclassifiedOnly=true` for incremental runs. 179 unit and integration tests pass.
 
 **Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
@@ -310,16 +310,16 @@ Define the semantic edge vocabulary and the index that stores typed links.
 
 ---
 
-## Priority 18 — GET /api/link-data
+## Priority 18 — GET /api/link-data ✓
 
 Expose linked note pairs with full note content for local LLM relation classification.
 
-- [ ] `app/api/link-data/route.ts`
-- [ ] Fetch backlinks + relations + note contents in parallel
-- [ ] Build pair list from backlinks, join existing relation types
-- [ ] Return `{ pairs[], pairCount, classifiedCount, computedAt }` — each pair includes noteA/noteB content + existing relation if any
-- [ ] `?unclassifiedOnly=true` query param to filter to unclassified pairs (incremental runs)
-- [ ] Integration tests (5+ via vitest)
+- [x] `app/api/link-data/route.ts`
+- [x] Fetch backlinks + relations + note contents in parallel
+- [x] Build pair list from backlinks, join existing relation types
+- [x] Return `{ pairs[], pairCount, classifiedCount, computedAt }` — each pair includes noteA/noteB content + existing relation if any
+- [x] `?unclassifiedOnly=true` query param to filter to unclassified pairs (incremental runs)
+- [x] Integration tests (6 via vitest)
 
 **Done when:** GET returns correct pair list; unclassifiedOnly filter works; note content is included.
 

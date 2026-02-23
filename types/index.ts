@@ -6,6 +6,7 @@ export type {
   Note,
   CreateNoteInput,
 } from "./note";
+export { NOTE_TYPES } from "./note";
 
 export type {
   EmbeddingVector,

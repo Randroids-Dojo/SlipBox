@@ -94,20 +94,3 @@ export function getRelationsForNote(
   );
 }
 
-// ---------------------------------------------------------------------------
-// Serialization
-// ---------------------------------------------------------------------------
-
-/**
- * Serialize a relations index to a JSON string.
- */
-export function serializeRelationsIndex(index: RelationsIndex): string {
-  return JSON.stringify(index, null, 2) + "\n";
-}
-
-/**
- * Deserialize a relations index from a JSON string.
- */
-export function deserializeRelationsIndex(json: string): RelationsIndex {
-  return JSON.parse(json) as RelationsIndex;
-}

@@ -7,7 +7,7 @@
  * similarity score.
  */
 
-import type { NoteId, NoteLink, BacklinksIndex } from "@/types";
+import { emptyBacklinksIndex, type NoteId, type NoteLink, type BacklinksIndex } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Read helpers
@@ -73,35 +73,6 @@ export function applyMatches(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Serialization
-// ---------------------------------------------------------------------------
-
-/**
- * Deserialize a backlinks index from a JSON string.
- * Returns an empty index if the input is empty or null.
- */
-export function deserializeBacklinks(json: string | null): BacklinksIndex {
-  if (!json || json.trim().length === 0) {
-    return { links: {} };
-  }
-  return JSON.parse(json) as BacklinksIndex;
-}
-
-/**
- * Serialize a backlinks index to a JSON string.
- */
-export function serializeBacklinks(index: BacklinksIndex): string {
-  return JSON.stringify(index, null, 2) + "\n";
-}
-
-/**
- * Create a fresh, empty backlinks index.
- */
-export function createEmptyBacklinksIndex(): BacklinksIndex {
-  return { links: {} };
-}
-
 /**
  * Rebuild the entire backlinks index from scratch given a full set of
  * link pairs. Used by the link-pass endpoint to recompute all links.
@@ -109,7 +80,7 @@ export function createEmptyBacklinksIndex(): BacklinksIndex {
 export function rebuildBacklinks(
   linkPairs: { noteA: NoteId; noteB: NoteId; similarity: number }[],
 ): BacklinksIndex {
-  const index = createEmptyBacklinksIndex();
+  const index = emptyBacklinksIndex();
   for (const pair of linkPairs) {
     addLink(index, pair.noteA, pair.noteB, pair.similarity);
   }

@@ -21,9 +21,7 @@ import {
   upsertEmbeddingWithRetry,
   writeFile,
 } from "@/src/github";
-import { type BacklinksIndex, type NoteLink, type NoteType, emptyBacklinksIndex } from "@/types";
-
-const VALID_NOTE_TYPES: NoteType[] = ["meta", "hypothesis"];
+import { type BacklinksIndex, type NoteLink, type NoteType, NOTE_TYPES, emptyBacklinksIndex } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,9 +37,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (body.type !== undefined && !VALID_NOTE_TYPES.includes(body.type as NoteType)) {
+    if (body.type !== undefined && !NOTE_TYPES.includes(body.type as NoteType)) {
       return NextResponse.json(
-        { error: `Invalid note type. Must be one of: ${VALID_NOTE_TYPES.join(", ")}` },
+        { error: `Invalid note type. Must be one of: ${NOTE_TYPES.join(", ")}` },
         { status: 400 },
       );
     }

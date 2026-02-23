@@ -6,7 +6,7 @@
  */
 
 import { createHash } from "node:crypto";
-import type { CreateNoteInput, Note, NoteId, NoteMetadata, NoteType } from "@/types";
+import { NOTE_TYPES, type CreateNoteInput, type Note, type NoteId, type NoteMetadata, type NoteType } from "@/types";
 
 // ---------------------------------------------------------------------------
 // ID Generation
@@ -206,7 +206,11 @@ export function parseNoteContent(markdown: string): {
   const title = titleMatch ? titleMatch[1] : undefined;
 
   const typeMatch = frontmatter.match(/^type:\s*(\S+)\s*$/m);
-  const type = typeMatch ? (typeMatch[1] as NoteType) : undefined;
+  const rawType = typeMatch ? typeMatch[1] : undefined;
+  const type =
+    rawType && (NOTE_TYPES as string[]).includes(rawType)
+      ? (rawType as NoteType)
+      : undefined;
 
   return { title, type, body };
 }

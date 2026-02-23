@@ -15,6 +15,9 @@ export type NoteId = string;
  */
 export type NoteType = "meta" | "hypothesis";
 
+/** All valid note types, useful for validation. */
+export const NOTE_TYPES: NoteType[] = ["meta", "hypothesis"];
+
 /** Frontmatter metadata attached to every note. */
 export interface NoteMetadata {
   /** Human-readable title (optional, derived from content if omitted). */
