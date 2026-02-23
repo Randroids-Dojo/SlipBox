@@ -174,3 +174,31 @@ export function serializeNote(note: Note): string {
 export function noteFilePath(noteId: NoteId, notesDir: string): string {
   return `${notesDir}/${noteId}.md`;
 }
+
+// ---------------------------------------------------------------------------
+// Deserialization
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a serialized note markdown file back into its title and body.
+ *
+ * Strips the YAML frontmatter block and extracts the optional `title` field.
+ * Returns the raw markdown body (everything after the closing `---`).
+ */
+export function parseNoteContent(markdown: string): {
+  title?: string;
+  body: string;
+} {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/);
+  if (!match) {
+    return { body: markdown.trim() };
+  }
+
+  const frontmatter = match[1];
+  const body = match[2].trim();
+
+  const titleMatch = frontmatter.match(/^title:\s*"?(.+?)"?\s*$/m);
+  const title = titleMatch ? titleMatch[1] : undefined;
+
+  return { title, body };
+}

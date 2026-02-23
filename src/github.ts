@@ -370,6 +370,19 @@ export async function updateJsonFileWithRetry<T>(
 }
 
 /**
+ * Read a note file from PrivateBox by note ID.
+ *
+ * Returns the raw markdown content, or `null` if the note does not exist.
+ */
+export async function readNote(
+  noteId: NoteId,
+  notesDir: string,
+): Promise<string | null> {
+  const file = await readFile(`${notesDir}/${noteId}.md`);
+  return file ? file.content : null;
+}
+
+/**
  * Atomically upsert a single embedding entry in the embeddings index.
  * Thin wrapper around updateJsonFileWithRetry.
  */

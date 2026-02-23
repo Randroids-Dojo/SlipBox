@@ -8,7 +8,7 @@ Implementation roadmap for SlipBox.
 
 **Completed:** All Phase 1 priorities (1-10) plus API authentication, and Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass). The full note ingestion, auto-linking, semantic clustering, and tension detection pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. The `POST /api/cluster-pass` endpoint clusters the embedding space using k-means and commits cluster metadata to PrivateBox. The `POST /api/tension-pass` endpoint detects semantic tensions — divergent note pairs within the same cluster — and commits the tensions index to PrivateBox. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 135 unit and integration tests pass.
 
-**Phase 1 is complete.** Phase 2 is complete.
+**Phase 1 is complete.** Phase 2 is complete. Phase 3 is in progress.
 
 ---
 
@@ -226,12 +226,48 @@ Detect tensions and persist results.
 
 ---
 
-## Deferred (Phase 3+)
+---
 
-These are documented in Plan.md but not yet implemented:
+## Phase 3 — Theme Synthesis
 
-- Nightly scheduled passes
-- Emergent theme detection
+---
+
+## Priority 15 — Nightly Scheduled Passes ✓
+
+Automate the link, cluster, and tension passes via GitHub Actions.
+
+- [x] `.github/workflows/nightly-passes.yml` — runs at 3 AM UTC daily
+- [x] Jobs chained: link-pass → cluster-pass → tension-pass
+- [x] `workflow_dispatch` for manual runs
+- [x] `SLIPBOX_URL` and `SLIPBOX_API_KEY` as GitHub Actions secrets
+
+**Done when:** Passes run automatically each night without manual invocation.
+
+---
+
+## Priority 16 — GET /api/theme-data ✓
+
+Expose a read endpoint so local LLM agents can fetch everything needed to
+synthesize meta-notes without making expensive OpenAI chat API calls.
+
+- [x] `app/api/theme-data/route.ts`
+- [x] Fetches clusters and tensions indexes in parallel
+- [x] Fetches full note content for every note in every cluster (in parallel)
+- [x] Parses frontmatter to extract title and body (`parseNoteContent` in `src/note.ts`)
+- [x] `readNote()` helper in `src/github.ts`
+- [x] Returns `{ clusters, tensions, clusterCount, noteCount, tensionCount, computedAt }`
+- [x] Each cluster entry includes `notes: { [noteId]: { title?, body } }`
+- [x] Integration tests (5 tests via vitest)
+- [x] Meta-notes submitted back via existing `POST /api/add-note` with `type: meta` frontmatter tag
+
+**Done when:** A local LLM agent can GET theme-data, synthesize cluster summaries,
+and POST them back as tagged meta-notes without any OpenAI chat API calls.
+
+---
+
+## Deferred (Phase 3+ continued)
+
+- Emergent theme detection (weekly cognitive summary)
 - Theory evolution engine
 
 ---
