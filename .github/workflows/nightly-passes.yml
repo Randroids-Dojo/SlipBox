@@ -1,0 +1,42 @@
+name: Nightly Passes
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 3 AM UTC daily
+  workflow_dispatch: # allow manual runs
+
+jobs:
+  link-pass:
+    name: Link Pass
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run link-pass
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.SLIPBOX_URL }}/api/link-pass" \
+            -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
+            -H "Content-Type: application/json"
+
+  cluster-pass:
+    name: Cluster Pass
+    runs-on: ubuntu-latest
+    needs: link-pass
+    steps:
+      - name: Run cluster-pass
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.SLIPBOX_URL }}/api/cluster-pass" \
+            -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
+            -H "Content-Type: application/json"
+
+  tension-pass:
+    name: Tension Pass
+    runs-on: ubuntu-latest
+    needs: cluster-pass
+    steps:
+      - name: Run tension-pass
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.SLIPBOX_URL }}/api/tension-pass" \
+            -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
+            -H "Content-Type: application/json"
