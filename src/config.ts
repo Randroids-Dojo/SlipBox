@@ -195,3 +195,31 @@ export const RELATIONS_INDEX_PATH = optionalEnv(
   "RELATIONS_INDEX_PATH",
   "index/relations.json",
 );
+
+// ---------------------------------------------------------------------------
+// Decay Detection
+// ---------------------------------------------------------------------------
+
+/** Path to the decay index file. */
+export const DECAY_INDEX_PATH = optionalEnv(
+  "DECAY_INDEX_PATH",
+  "index/decay.json",
+);
+
+/**
+ * Maximum cosine similarity between a note and its cluster centroid before
+ * the note is considered a cluster outlier and receives a decay penalty.
+ */
+export const CLUSTER_OUTLIER_THRESHOLD = optionalNumericEnv(
+  "CLUSTER_OUTLIER_THRESHOLD",
+  0.70,
+);
+
+/**
+ * Minimum decay score required for a note to appear in the decay index.
+ * Notes below this threshold are considered healthy and are excluded.
+ */
+export const DECAY_SCORE_THRESHOLD = optionalNumericEnv(
+  "DECAY_SCORE_THRESHOLD",
+  0.3,
+);

@@ -26,3 +26,6 @@ export { emptyTensionsIndex } from "./tension";
 
 export type { RelationType, TypedLink, RelationsIndex } from "./relation";
 export { RELATION_TYPES, emptyRelationsIndex } from "./relation";
+
+export type { DecayReason, DecayRecord, DecayIndex } from "./decay";
+export { emptyDecayIndex } from "./decay";

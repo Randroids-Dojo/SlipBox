@@ -9,6 +9,7 @@
 import {
   type BacklinksIndex,
   type ClustersIndex,
+  type DecayIndex,
   type EmbeddingsIndex,
   type NoteEmbedding,
   type NoteId,
@@ -16,6 +17,7 @@ import {
   type TensionsIndex,
   emptyBacklinksIndex,
   emptyClustersIndex,
+  emptyDecayIndex,
   emptyEmbeddingsIndex,
   emptyRelationsIndex,
   emptyTensionsIndex,
@@ -23,6 +25,7 @@ import {
 import {
   BACKLINKS_INDEX_PATH,
   CLUSTERS_INDEX_PATH,
+  DECAY_INDEX_PATH,
   EMBEDDINGS_INDEX_PATH,
   RELATIONS_INDEX_PATH,
   TENSIONS_INDEX_PATH,
@@ -414,6 +417,37 @@ export async function readNote(
 ): Promise<string | null> {
   const file = await readFile(`${notesDir}/${noteId}.md`);
   return file ? file.content : null;
+}
+
+/**
+ * Read the decay index from PrivateBox.
+ * Returns an empty index if the file does not yet exist.
+ */
+export async function readDecayIndex(): Promise<{
+  index: DecayIndex;
+  sha: string | null;
+}> {
+  const file = await readFile(DECAY_INDEX_PATH);
+  if (!file) {
+    return { index: emptyDecayIndex(), sha: null };
+  }
+  return { index: JSON.parse(file.content) as DecayIndex, sha: file.sha };
+}
+
+/**
+ * Write the decay index to PrivateBox.
+ */
+export async function writeDecayIndex(
+  index: DecayIndex,
+  sha: string | null,
+  message: string = "Update decay index",
+): Promise<string> {
+  return writeFile({
+    path: DECAY_INDEX_PATH,
+    content: JSON.stringify(index, null, 2) + "\n",
+    message,
+    sha: sha ?? undefined,
+  });
 }
 
 /**

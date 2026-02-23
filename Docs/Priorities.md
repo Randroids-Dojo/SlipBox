@@ -6,7 +6,7 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-19 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations). The full note ingestion, auto-linking, semantic clustering, tension detection, and nightly automation pipeline is implemented. The relation module defines typed semantic edges (`supports`, `contradicts`, `refines`, `is-example-of`, `contrasts-with`) with canonical pair keying, upsert semantics, and per-note filtering. `readRelationsIndex()` and `writeRelationsIndex()` GitHub helpers and `RELATIONS_INDEX_PATH` config are in place. GET /api/link-data exposes deduplicated backlink pairs with full note content and existing relation classifications for local LLM relation typing; supports `?unclassifiedOnly=true` for incremental runs. POST /api/relations accepts classified relation records from a local LLM agent, validates types and backlink membership, upserts with similarity from the backlinks index, and commits. 190 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-20 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, and staleness detection pipeline is implemented. The decay module scores notes on four pure-math signals (no-links, low-link-density, cluster-outlier, no-cluster), caps at 1.0, and only persists notes at or above `DECAY_SCORE_THRESHOLD`. `readDecayIndex()` and `writeDecayIndex()` GitHub helpers and `DECAY_INDEX_PATH`, `CLUSTER_OUTLIER_THRESHOLD`, `DECAY_SCORE_THRESHOLD` config tunables are in place. 219 unit and integration tests pass.
 
 **Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
@@ -340,18 +340,18 @@ Accept typed relation records from a local LLM agent and persist them.
 
 ---
 
-## Priority 20 — Decay Module + POST /api/decay-pass
+## Priority 20 — Decay Module + POST /api/decay-pass ✓
 
 Pure-math staleness detection — no LLM, no external dependencies. Same pattern as tension detection.
 
-- [ ] `types/decay.ts` — `DecayRecord`, `DecayReason`, `DecayIndex` type definitions
-- [ ] `DecayReason`: `'no-links' | 'low-link-density' | 'cluster-outlier' | 'no-cluster'`
-- [ ] `src/decay.ts` — `computeDecay(embeddingsIndex, backlinksIndex, clustersIndex, config)` → `DecayIndex`
-- [ ] Scoring: `+0.4` no-links, `+0.2` low-link-density (< 2 links), `+0.3` cluster-outlier (similarity to centroid < threshold), `+0.1` no-cluster; capped at 1.0
-- [ ] Config tunables: `DECAY_INDEX_PATH`, `CLUSTER_OUTLIER_THRESHOLD` (default 0.70), `DECAY_SCORE_THRESHOLD` (default 0.3 — minimum score to include)
-- [ ] `app/api/decay-pass/route.ts` — fetch indexes → run decay → commit `decay.json` → return `{ staleCount, records[] }`
-- [ ] `readDecayIndex()`, `writeDecayIndex()` GitHub helpers
-- [ ] Unit tests (25+ via vitest) — each scoring component; integration tests (4+)
+- [x] `types/decay.ts` — `DecayRecord`, `DecayReason`, `DecayIndex` type definitions
+- [x] `DecayReason`: `'no-links' | 'low-link-density' | 'cluster-outlier' | 'no-cluster'`
+- [x] `src/decay.ts` — `computeDecay(embeddingsIndex, backlinksIndex, clustersIndex, outlierThreshold?, scoreThreshold?)` → `DecayIndex`
+- [x] Scoring: `+0.4` no-links, `+0.2` low-link-density (< 2 links), `+0.3` cluster-outlier (similarity to centroid < threshold), `+0.1` no-cluster; capped at 1.0
+- [x] Config tunables: `DECAY_INDEX_PATH`, `CLUSTER_OUTLIER_THRESHOLD` (default 0.70), `DECAY_SCORE_THRESHOLD` (default 0.3 — minimum score to include)
+- [x] `app/api/decay-pass/route.ts` — fetch indexes → run decay → commit `decay.json` → return `{ staleCount, records[] }`
+- [x] `readDecayIndex()`, `writeDecayIndex()` GitHub helpers
+- [x] Unit tests (25 via vitest) — each scoring component; integration tests (4)
 
 **Done when:** decay-pass detects isolated, low-link, and outlier notes correctly; commits decay.json.
 
