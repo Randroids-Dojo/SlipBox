@@ -4,7 +4,7 @@
  * Full pipeline: create note → embed → fetch index → similarity pass →
  * update links → commit all changes to PrivateBox.
  *
- * Input:  { "content": "..." }
+ * Input:  { "content": "...", "type": "meta" | "hypothesis" (optional) }
  * Output: { "noteId": "...", "linkedNotes": [...] }
  */
 
@@ -21,14 +21,16 @@ import {
   upsertEmbeddingWithRetry,
   writeFile,
 } from "@/src/github";
-import { type BacklinksIndex, type NoteLink, emptyBacklinksIndex } from "@/types";
+import { type BacklinksIndex, type NoteLink, type NoteType, emptyBacklinksIndex } from "@/types";
+
+const VALID_NOTE_TYPES: NoteType[] = ["meta", "hypothesis"];
 
 export async function POST(request: NextRequest) {
   try {
     const auth = verifyAuth(request);
     if (!auth.ok) return auth.response!;
 
-    const body = (await request.json()) as { content?: string };
+    const body = (await request.json()) as { content?: string; type?: string };
 
     if (!body.content || typeof body.content !== "string" || !body.content.trim()) {
       return NextResponse.json(
@@ -37,8 +39,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (body.type !== undefined && !VALID_NOTE_TYPES.includes(body.type as NoteType)) {
+      return NextResponse.json(
+        { error: `Invalid note type. Must be one of: ${VALID_NOTE_TYPES.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
+    const noteType = body.type as NoteType | undefined;
+
     // 1. Create note
-    const note = createNote({ content: body.content });
+    const note = createNote({
+      content: body.content,
+      metadata: noteType ? { type: noteType } : undefined,
+    });
 
     // 2. Generate embedding
     const provider = createOpenAIProvider();
@@ -90,6 +104,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       noteId: note.id,
+      type: note.metadata.type ?? null,
       linkedNotes: links.map((l) => ({
         noteId: l.targetId,
         similarity: l.similarity,

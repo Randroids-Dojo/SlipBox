@@ -1,5 +1,6 @@
 export type {
   NoteId,
+  NoteType,
   NoteMetadata,
   NoteLink,
   Note,

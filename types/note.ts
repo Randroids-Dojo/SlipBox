@@ -7,10 +7,20 @@
 /** Unique identifier for a note (timestamp + hash). */
 export type NoteId = string;
 
+/**
+ * Semantic type of a note. Omitted for regular atomic notes.
+ *
+ * - `meta`       — AI-generated cluster summary (Phase 3)
+ * - `hypothesis` — AI-generated research hypothesis from a tension (Phase 4)
+ */
+export type NoteType = "meta" | "hypothesis";
+
 /** Frontmatter metadata attached to every note. */
 export interface NoteMetadata {
   /** Human-readable title (optional, derived from content if omitted). */
   title?: string;
+  /** Semantic note type. Omitted for regular atomic notes. */
+  type?: NoteType;
   /** Free-form tags for manual categorization. */
   tags: string[];
   /** Source or origin of the idea (URL, book title, conversation, etc.). */

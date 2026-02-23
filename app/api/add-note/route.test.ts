@@ -154,6 +154,39 @@ describe("POST /api/add-note", () => {
     expect(writeCalls).toHaveLength(3);
   });
 
+  it("returns 400 for an invalid note type", async () => {
+    const response = await POST(makeRequest({ content: "Some content.", type: "invalid" }));
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toContain("type");
+  });
+
+  it("creates a meta-note and returns type in response", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(fakeOpenAIEmbeddingResponse())
+      .mockResolvedValueOnce(fakeGitHub404()) // embeddings
+      .mockResolvedValueOnce(fakeGitHubPut("note-sha")) // write note
+      .mockResolvedValueOnce(fakeGitHub404()) // backlinks read
+      .mockResolvedValueOnce(fakeGitHubPut("bl-sha")) // write backlinks
+      .mockResolvedValueOnce(fakeGitHub404()) // embeddings upsert read
+      .mockResolvedValueOnce(fakeGitHubPut("emb-sha")); // write embeddings
+
+    const response = await POST(makeRequest({ content: "Cluster summary.", type: "meta" }));
+    expect(response.status).toBe(200);
+
+    const json = await response.json();
+    expect(json.type).toBe("meta");
+
+    // Verify the note file written to GitHub contains type: meta in frontmatter
+    const writeCalls = fetchSpy.mock.calls.filter(
+      (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
+    );
+    const noteWrite = writeCalls[0];
+    const noteBody = JSON.parse(noteWrite[1]!.body as string);
+    const noteContent = Buffer.from(noteBody.content, "base64").toString("utf-8");
+    expect(noteContent).toContain("type: meta");
+  });
+
   it("links to existing notes when similarity is above threshold", async () => {
     // Create an existing embeddings index with a note that has a very similar vector
     const existingEmbeddings = {

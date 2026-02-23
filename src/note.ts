@@ -6,7 +6,7 @@
  */
 
 import { createHash } from "node:crypto";
-import type { CreateNoteInput, Note, NoteId, NoteMetadata } from "@/types";
+import type { CreateNoteInput, Note, NoteId, NoteMetadata, NoteType } from "@/types";
 
 // ---------------------------------------------------------------------------
 // ID Generation
@@ -141,6 +141,10 @@ export function serializeNote(note: Note): string {
     lines.push(`title: "${note.metadata.title}"`);
   }
 
+  if (note.metadata.type) {
+    lines.push(`type: ${note.metadata.type}`);
+  }
+
   if (note.metadata.tags.length > 0) {
     lines.push(
       `tags: [${note.metadata.tags.map((t) => `"${t}"`).join(", ")}]`,
@@ -187,6 +191,7 @@ export function noteFilePath(noteId: NoteId, notesDir: string): string {
  */
 export function parseNoteContent(markdown: string): {
   title?: string;
+  type?: NoteType;
   body: string;
 } {
   const match = markdown.match(/^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/);
@@ -200,5 +205,8 @@ export function parseNoteContent(markdown: string): {
   const titleMatch = frontmatter.match(/^title:\s*"?(.+?)"?\s*$/m);
   const title = titleMatch ? titleMatch[1] : undefined;
 
-  return { title, body };
+  const typeMatch = frontmatter.match(/^type:\s*(\S+)\s*$/m);
+  const type = typeMatch ? (typeMatch[1] as NoteType) : undefined;
+
+  return { title, type, body };
 }
