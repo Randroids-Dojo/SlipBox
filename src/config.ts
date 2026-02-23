@@ -159,3 +159,29 @@ export const MIN_NOTES_FOR_CLUSTERING = optionalNumericEnv(
   "MIN_NOTES_FOR_CLUSTERING",
   3,
 );
+
+// ---------------------------------------------------------------------------
+// Tension Detection
+// ---------------------------------------------------------------------------
+
+/** Path to the tensions index file. */
+export const TENSIONS_INDEX_PATH = optionalEnv(
+  "TENSIONS_INDEX_PATH",
+  "index/tensions.json",
+);
+
+/**
+ * Maximum cosine similarity between two notes in the same cluster for
+ * them to be flagged as a tension. Pairs above this are considered
+ * aligned; pairs below are divergent enough to warrant attention.
+ */
+export const TENSION_THRESHOLD = optionalNumericEnv(
+  "TENSION_THRESHOLD",
+  0.72,
+);
+
+/** Minimum number of notes required to run tension detection. */
+export const MIN_NOTES_FOR_TENSION = optionalNumericEnv(
+  "MIN_NOTES_FOR_TENSION",
+  4,
+);

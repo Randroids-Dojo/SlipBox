@@ -15,3 +15,5 @@ export type {
 export type { BacklinksIndex } from "./graph";
 
 export type { Cluster, ClustersIndex } from "./cluster";
+
+export type { Tension, TensionsIndex } from "./tension";
