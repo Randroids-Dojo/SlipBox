@@ -6,7 +6,7 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-18 (relation types + RelationsIndex, GET /api/link-data). The full note ingestion, auto-linking, semantic clustering, tension detection, and nightly automation pipeline is implemented. The relation module defines typed semantic edges (`supports`, `contradicts`, `refines`, `is-example-of`, `contrasts-with`) with canonical pair keying, upsert semantics, and per-note filtering. `readRelationsIndex()` and `writeRelationsIndex()` GitHub helpers and `RELATIONS_INDEX_PATH` config are in place. GET /api/link-data exposes deduplicated backlink pairs with full note content and existing relation classifications for local LLM relation typing; supports `?unclassifiedOnly=true` for incremental runs. 179 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-19 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations). The full note ingestion, auto-linking, semantic clustering, tension detection, and nightly automation pipeline is implemented. The relation module defines typed semantic edges (`supports`, `contradicts`, `refines`, `is-example-of`, `contrasts-with`) with canonical pair keying, upsert semantics, and per-note filtering. `readRelationsIndex()` and `writeRelationsIndex()` GitHub helpers and `RELATIONS_INDEX_PATH` config are in place. GET /api/link-data exposes deduplicated backlink pairs with full note content and existing relation classifications for local LLM relation typing; supports `?unclassifiedOnly=true` for incremental runs. POST /api/relations accepts classified relation records from a local LLM agent, validates types and backlink membership, upserts with similarity from the backlinks index, and commits. 190 unit and integration tests pass.
 
 **Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
@@ -325,16 +325,16 @@ Expose linked note pairs with full note content for local LLM relation classific
 
 ---
 
-## Priority 19 — POST /api/relations
+## Priority 19 — POST /api/relations ✓
 
 Accept typed relation records from a local LLM agent and persist them.
 
-- [ ] `app/api/relations/route.ts`
-- [ ] Accept `{ relations: [{ noteA, noteB, relationType, reason }] }`
-- [ ] Read current relations index → upsert each record (attach similarity from backlinks, classifiedAt timestamp) → commit
-- [ ] Validate: reject unknown relation types; reject pairs not in backlinks index
-- [ ] Return `{ updated, total }`
-- [ ] Integration tests (5+ via vitest)
+- [x] `app/api/relations/route.ts`
+- [x] Accept `{ relations: [{ noteA, noteB, relationType, reason }] }`
+- [x] Read current relations index → upsert each record (attach similarity from backlinks, classifiedAt timestamp) → commit
+- [x] Validate: reject unknown relation types; reject pairs not in backlinks index
+- [x] Return `{ updated, total }`
+- [x] Integration tests (11 via vitest)
 
 **Done when:** LLM agent can classify pairs from link-data and POST results; relations.json is updated correctly.
 

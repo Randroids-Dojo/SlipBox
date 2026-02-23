@@ -33,25 +33,39 @@ Contains:
 
 /app
   /api
-    add-note
-    link-pass
-    cluster-pass
-    tension-pass
+    add-note          — POST: ingest a note, embed, link, commit
+    link-pass         — POST: recompute all backlinks
+    cluster-pass      — POST: k-means cluster the embedding space
+    tension-pass      — POST: detect divergent pairs within clusters
+    theme-data        — GET: fetch cluster/tension data for LLM synthesis
+    link-data         — GET: fetch backlink pairs with content for LLM classification
+    relations         — POST: persist typed relation records from LLM agent
 
 /src
-  embeddings.ts
-  similarity.ts
-  graph.ts
-  github.ts
-  note.ts
+  auth.ts
+  cluster.ts
   config.ts
+  embeddings.ts
+  github.ts
+  graph.ts
+  note.ts
+  relation.ts
+  similarity.ts
+  tension.ts
 
 /types
-  note.ts
+  cluster.ts
   embedding.ts
+  graph.ts
+  note.ts
+  relation.ts
+  tension.ts
 
-PLAN.md
-README.md
+/.github/workflows
+  nightly-passes.yml  — link-pass → cluster-pass → tension-pass at 3 AM UTC
+
+Docs/Plan.md
+Docs/Priorities.md
 
 This repository:
 - Runs on Vercel
@@ -73,13 +87,16 @@ Contains:
   embeddings.json
   backlinks.json
   clusters.json
-/meta
+  tensions.json
+  relations.json
 
 This repository:
 - Stores atomic markdown notes
 - Stores semantic embeddings
 - Stores backlink graph
 - Stores cluster metadata
+- Stores tension records
+- Stores typed semantic relations
 
 It contains no engine logic.
 
@@ -106,53 +123,62 @@ GitHub is the database.
 
 ---
 
-# 4. API Endpoints (V1)
+# 4. API Endpoints
 
 ## POST /api/add-note
 
-Input:
-{
-  "content": "Agents shine when ambiguity exists."
-}
+Input: `{ "content": "...", "type"?: "meta" | "hypothesis" }`
 
-Pipeline:
-1. Normalize to atomic note format.
-2. Generate unique ID.
-3. Generate embedding via OpenAI.
-4. Fetch embeddings.json from PrivateBox.
-5. Compute cosine similarity.
-6. Auto-link above threshold.
-7. Update embeddings.json and backlinks.json.
-8. Commit note + index updates.
+Pipeline: normalize → embed → similarity pass → update backlinks → commit.
 
-Output:
-{
-  "noteId": "...",
-  "linkedNotes": [...]
-}
+Output: `{ "noteId": "...", "linkedNotes": [...] }`
 
 ---
 
 ## POST /api/link-pass
 
-Recomputes similarity across entire graph.
-Updates backlinks.
-Commits changes.
+Recomputes similarity across the entire graph.
+Rebuilds backlinks.json and commits.
 
 ---
 
 ## POST /api/cluster-pass
 
-Clusters embedding space.
-Creates or updates meta-notes for themes.
-Commits cluster metadata.
+K-means clusters the embedding space (automatic K or `{ "k": N }`).
+Commits clusters.json.
 
 ---
 
 ## POST /api/tension-pass
 
-Detects semantic contradictions.
-Creates tension notes for unresolved conflicts.
+Detects divergent note pairs within clusters.
+Commits tensions.json.
+
+---
+
+## GET /api/theme-data
+
+Returns clusters + tensions + full note content for each cluster member.
+Used by local LLM agents to synthesize meta-notes, submitted back via add-note.
+
+---
+
+## GET /api/link-data
+
+Returns deduplicated backlink pairs with full note content and existing relation
+classification. Supports `?unclassifiedOnly=true` for incremental runs.
+Used by local LLM agents to classify semantic relation types.
+
+---
+
+## POST /api/relations
+
+Input: `{ "relations": [{ "noteA", "noteB", "relationType", "reason" }] }`
+
+Accepts typed relation records from a local LLM agent.
+Validates relation types and backlink membership.
+Upserts into relations.json with similarity from backlinks index.
+Output: `{ "updated", "total" }`
 
 ---
 
@@ -221,22 +247,22 @@ Optional future:
 
 ---
 
-# 9. Future Evolution
+# 9. Evolution
 
-Phase 1:
-Manual note ingestion + auto-linking.
+Phase 1 (complete):
+Manual note ingestion, embedding, auto-linking.
 
-Phase 2:
-Nightly cluster and tension passes.
+Phase 2 (complete):
+K-means clustering + tension detection.
 
-Phase 3:
-Emergent theme detection.
-Meta-note synthesis.
-Weekly cognitive summary.
+Phase 3 (complete):
+Nightly scheduled passes (GitHub Actions).
+GET /api/theme-data for LLM-driven meta-note synthesis.
 
-Phase 4:
-Theory evolution engine.
-AI proposes unexplored conceptual regions.
+Phase 4 (in progress):
+Typed semantic edges (relations) — complete through Priority 19.
+Remaining: decay detection, hypothesis generation, refinement suggestions,
+snapshot timeline, exploration pass, nightly Phase 4 automation, graph UI.
 
 ---
 
