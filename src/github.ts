@@ -6,11 +6,12 @@
  * are JSON files committed alongside them.
  */
 
-import type { BacklinksIndex, ClustersIndex, EmbeddingsIndex } from "@/types";
+import type { BacklinksIndex, ClustersIndex, EmbeddingsIndex, TensionsIndex } from "@/types";
 import {
   BACKLINKS_INDEX_PATH,
   CLUSTERS_INDEX_PATH,
   EMBEDDINGS_INDEX_PATH,
+  TENSIONS_INDEX_PATH,
   GITHUB_API_BASE,
   getGitHubToken,
   getPrivateBoxOwner,
@@ -248,6 +249,42 @@ export async function writeClustersIndex(
 ): Promise<string> {
   return writeFile({
     path: CLUSTERS_INDEX_PATH,
+    content: JSON.stringify(index, null, 2) + "\n",
+    message,
+    sha: sha ?? undefined,
+  });
+}
+
+/** Empty tensions index for bootstrapping. */
+function emptyTensionsIndex(): TensionsIndex {
+  return { tensions: {}, computedAt: new Date().toISOString() };
+}
+
+/**
+ * Read the tensions index from PrivateBox.
+ * Returns an empty index if the file does not yet exist.
+ */
+export async function readTensionsIndex(): Promise<{
+  index: TensionsIndex;
+  sha: string | null;
+}> {
+  const file = await readFile(TENSIONS_INDEX_PATH);
+  if (!file) {
+    return { index: emptyTensionsIndex(), sha: null };
+  }
+  return { index: JSON.parse(file.content) as TensionsIndex, sha: file.sha };
+}
+
+/**
+ * Write the tensions index to PrivateBox.
+ */
+export async function writeTensionsIndex(
+  index: TensionsIndex,
+  sha: string | null,
+  message: string = "Update tensions index",
+): Promise<string> {
+  return writeFile({
+    path: TENSIONS_INDEX_PATH,
     content: JSON.stringify(index, null, 2) + "\n",
     message,
     sha: sha ?? undefined,

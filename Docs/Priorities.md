@@ -6,9 +6,9 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, and Phase 2 Priority 11 (cluster-pass). The full note ingestion, auto-linking, and semantic clustering pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. The `POST /api/cluster-pass` endpoint clusters the embedding space using k-means and commits cluster metadata to PrivateBox. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 117 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, and Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass). The full note ingestion, auto-linking, semantic clustering, and tension detection pipeline is implemented. The GitHub module reads/writes PrivateBox files via the Contents API with SHA tracking and graceful 404 handling for bootstrapping. The graph module manages bidirectional backlinks with add/remove/rebuild operations. The `POST /api/add-note` endpoint runs the complete pipeline: create note → embed → similarity pass → update links → commit. The `POST /api/link-pass` endpoint batch-recomputes all similarity links across the full embeddings index. The `POST /api/cluster-pass` endpoint clusters the embedding space using k-means and commits cluster metadata to PrivateBox. The `POST /api/tension-pass` endpoint detects semantic tensions — divergent note pairs within the same cluster — and commits the tensions index to PrivateBox. Inbound API requests are authenticated via a shared Bearer token (`SLIPBOX_API_KEY`). 135 unit and integration tests pass.
 
-**Phase 1 is complete.** Phase 2 is in progress.
+**Phase 1 is complete.** Phase 2 is complete.
 
 ---
 
@@ -195,11 +195,41 @@ Cluster the embedding space and persist results.
 
 ---
 
-## Deferred (Phase 2+)
+## Priority 13 — Tension Module ✓
+
+Pure embedding-space tension detection, no external dependencies.
+
+- [x] `types/tension.ts` — `Tension`, `TensionsIndex` type definitions
+- [x] `src/tension.ts` — `detectTensions()` scans clusters for divergent note pairs
+- [x] Pairwise cosine similarity within each cluster; pairs below threshold are flagged
+- [x] Canonical note ordering (smaller ID first) in tension records
+- [x] Config tunables: `TENSIONS_INDEX_PATH`, `TENSION_THRESHOLD`, `MIN_NOTES_FOR_TENSION`
+- [x] Unit tests (13 tests via vitest)
+
+**Done when:** Given embeddings and clusters indexes, produces tension records for divergent pairs.
+
+---
+
+## Priority 14 — POST /api/tension-pass ✓
+
+Detect tensions and persist results.
+
+- [x] `app/api/tension-pass/route.ts`
+- [x] Fetch embeddings and clusters from PrivateBox
+- [x] Run tension detection across all clusters
+- [x] Commit `tensions.json` to PrivateBox
+- [x] Return tension summary: count and individual tension records with similarity scores
+- [x] GitHub integration: `readTensionsIndex()`, `writeTensionsIndex()` helpers
+- [x] Integration tests with mocked GitHub (5 tests via vitest)
+
+**Done when:** Calling tension-pass produces and persists a valid tensions index.
+
+---
+
+## Deferred (Phase 3+)
 
 These are documented in Plan.md but not yet implemented:
 
-- `/api/tension-pass` — detect semantic contradictions
 - Nightly scheduled passes
 - Emergent theme detection
 - Theory evolution engine
