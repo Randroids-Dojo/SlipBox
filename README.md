@@ -59,6 +59,31 @@ Clusters the embedding space using k-means and commits `clusters.json` to Privat
 
 Detects semantic tensions — pairs of notes within the same cluster whose embeddings diverge significantly. Commits `tensions.json`. Requires a current clusters index (run cluster-pass first).
 
+### `POST /api/decay-pass`
+
+Scores every note for staleness using four pure-math signals (no LLM calls). Commits `decay.json`. Only notes at or above `DECAY_SCORE_THRESHOLD` appear in the index.
+
+```json
+// Response
+{
+  "message": "Decay pass complete",
+  "noteCount": 42,
+  "staleCount": 5,
+  "records": [
+    { "noteId": "20260101T000000-aaaaaaaa", "score": 0.7, "reasons": ["no-links", "low-link-density", "no-cluster"] }
+  ]
+}
+```
+
+Staleness signals (additive, capped at 1.0):
+
+| Signal | Score | Condition |
+|--------|-------|-----------|
+| `no-links` | +0.4 | Zero backlinks |
+| `low-link-density` | +0.2 | Fewer than 2 backlinks |
+| `cluster-outlier` | +0.3 | Cosine similarity to cluster centroid < `CLUSTER_OUTLIER_THRESHOLD` |
+| `no-cluster` | +0.1 | Not assigned to any cluster |
+
 ### `GET /api/theme-data`
 
 Returns everything a local LLM agent needs to synthesize meta-notes: cluster assignments, full note content (title + body), and detected tensions. No embeddings — only human-readable content.
@@ -92,11 +117,13 @@ Health check. Returns `{ "ok": true }`.
 
 ## Nightly Automation
 
-GitHub Actions runs the three passes in sequence each night at 3 AM UTC:
+GitHub Actions runs the core passes in sequence each night at 3 AM UTC:
 
 ```
 link-pass → cluster-pass → tension-pass
 ```
+
+`decay-pass` is available but not yet included in the nightly chain (scheduled for Priority 25 alongside snapshot and exploration passes).
 
 Configured in `.github/workflows/nightly-passes.yml`. Can also be triggered manually via **Actions → Nightly Passes → Run workflow**.
 
@@ -126,6 +153,8 @@ Required GitHub Actions secrets:
 | `MIN_CLUSTERS` | No | Minimum k-means cluster count (default: `2`) |
 | `MAX_CLUSTERS` | No | Maximum k-means cluster count (default: `20`) |
 | `TENSION_THRESHOLD` | No | Max similarity for a pair to be flagged as a tension (default: `0.72`) |
+| `CLUSTER_OUTLIER_THRESHOLD` | No | Max centroid similarity before cluster-outlier decay penalty (default: `0.70`) |
+| `DECAY_SCORE_THRESHOLD` | No | Minimum decay score for a note to appear in the index (default: `0.30`) |
 
 ### OpenAI API Key Permissions
 
@@ -147,6 +176,8 @@ index/
   backlinks.json        ← bidirectional link graph
   clusters.json         ← k-means cluster assignments
   tensions.json         ← detected semantic tensions
+  relations.json        ← typed semantic edges between note pairs
+  decay.json            ← staleness scores for under-connected notes
 ```
 
 ---

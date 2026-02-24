@@ -40,11 +40,13 @@ Contains:
     theme-data        — GET: fetch cluster/tension data for LLM synthesis
     link-data         — GET: fetch backlink pairs with content for LLM classification
     relations         — POST: persist typed relation records from LLM agent
+    decay-pass        — POST: score notes for staleness; commit decay.json
 
 /src
   auth.ts
   cluster.ts
   config.ts
+  decay.ts
   embeddings.ts
   github.ts
   graph.ts
@@ -55,6 +57,7 @@ Contains:
 
 /types
   cluster.ts
+  decay.ts
   embedding.ts
   graph.ts
   note.ts
@@ -89,6 +92,7 @@ Contains:
   clusters.json
   tensions.json
   relations.json
+  decay.json
 
 This repository:
 - Stores atomic markdown notes
@@ -97,6 +101,7 @@ This repository:
 - Stores cluster metadata
 - Stores tension records
 - Stores typed semantic relations
+- Stores staleness scores
 
 It contains no engine logic.
 
@@ -260,8 +265,8 @@ Nightly scheduled passes (GitHub Actions).
 GET /api/theme-data for LLM-driven meta-note synthesis.
 
 Phase 4 (in progress):
-Typed semantic edges (relations) — complete through Priority 19.
-Remaining: decay detection, hypothesis generation, refinement suggestions,
+Typed semantic edges (relations) and staleness detection — complete through Priority 20.
+Remaining: hypothesis generation, refinement suggestions,
 snapshot timeline, exploration pass, nightly Phase 4 automation, graph UI.
 
 ---
