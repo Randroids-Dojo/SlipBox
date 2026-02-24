@@ -71,20 +71,11 @@ export async function GET(request: NextRequest) {
       return { ...snapshot, delta };
     });
 
-    const response: {
-      snapshots: SnapshotWithDelta[];
-      snapshotCount: number;
-      since?: string;
-    } = {
+    return NextResponse.json({
       snapshots: withDeltas,
       snapshotCount: withDeltas.length,
-    };
-
-    if (sinceParam) {
-      response.since = sinceParam;
-    }
-
-    return NextResponse.json(response);
+      ...(sinceParam && { since: sinceParam }),
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Internal server error";

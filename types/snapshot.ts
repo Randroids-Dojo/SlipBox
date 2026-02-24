@@ -9,12 +9,7 @@
  * Stored as /index/snapshots.json in PrivateBox.
  */
 
-/**
- * A single point-in-time snapshot of the knowledge graph.
- *
- * One snapshot is captured per nightly run and appended to the
- * SnapshotsIndex. Snapshots are immutable after creation.
- */
+/** A single point-in-time snapshot of the knowledge graph. */
 export interface GraphSnapshot {
   /** Unique snapshot identifier (e.g. "snapshot-1700000000000"). */
   id: string;
@@ -36,12 +31,7 @@ export interface GraphSnapshot {
   avgLinksPerNote: number;
 }
 
-/**
- * The full snapshots index stored in PrivateBox at /index/snapshots.json.
- *
- * Append-only: snapshots are only ever added, never removed or updated.
- * Ordered by capturedAt ascending.
- */
+/** The full snapshots index stored in PrivateBox at /index/snapshots.json. Append-only. */
 export interface SnapshotsIndex {
   /** Ordered array of snapshots, oldest first. */
   snapshots: GraphSnapshot[];

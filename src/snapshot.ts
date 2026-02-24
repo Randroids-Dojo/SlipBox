@@ -31,12 +31,9 @@ export function captureSnapshot(
   const id = `snapshot-${Date.now()}`;
   const capturedAt = new Date().toISOString();
 
-  // noteCount: number of notes in the embeddings index
   const noteCount = Object.keys(embeddingsIndex.embeddings).length;
 
-  // linkCount: unique undirected pairs — count pairs where noteId < linkedId
-  // backlinksIndex.links has structure { [noteId]: NoteLink[] }
-  // where each NoteLink has a targetId field
+  // Count unique undirected pairs: only record (A, B) where A < B
   let linkCount = 0;
   for (const [noteId, links] of Object.entries(backlinksIndex.links)) {
     for (const link of links) {
@@ -46,23 +43,16 @@ export function captureSnapshot(
     }
   }
 
-  // clusterCount: number of clusters
   const clusterCount = Object.keys(clustersIndex.clusters).length;
-
-  // tensionCount: number of tensions
   const tensionCount = Object.keys(tensionsIndex.tensions).length;
-
-  // decayCount: number of decay records
   const decayCount = Object.keys(decayIndex.records).length;
 
-  // clusterSizes: map of clusterId → member note count
   const clusterSizes: Record<string, number> = {};
   for (const [clusterId, cluster] of Object.entries(clustersIndex.clusters)) {
     clusterSizes[clusterId] = cluster.noteIds.length;
   }
 
-  // avgLinksPerNote: total directed links / noteCount
-  // Sum of all backlink array lengths gives total directed link references
+  // avgLinksPerNote: sum of all directed link counts / noteCount
   let totalDirectedLinks = 0;
   for (const links of Object.values(backlinksIndex.links)) {
     totalDirectedLinks += links.length;
