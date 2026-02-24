@@ -28,6 +28,8 @@ import {
   emptySnapshotsIndex,
   emptyTensionsIndex,
 } from "@/types";
+import { parseNoteContent } from "./note";
+import type { NoteType } from "@/types";
 import {
   BACKLINKS_INDEX_PATH,
   CLUSTERS_INDEX_PATH,
@@ -567,4 +569,32 @@ export async function writeExplorationsIndex(
     message,
     sha: sha ?? undefined,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Note content helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch and parse a batch of notes by ID, returning a map of parsed content.
+ *
+ * Notes that do not exist in PrivateBox are omitted from the result.
+ * Fetches all notes in parallel.
+ */
+export async function fetchNotesMap(
+  noteIds: string[],
+  notesDir: string,
+): Promise<Record<string, { title?: string; type?: NoteType; body: string }>> {
+  const rawContents = await Promise.all(
+    noteIds.map((id) => readNote(id, notesDir)),
+  );
+  const map: Record<string, { title?: string; type?: NoteType; body: string }> =
+    {};
+  for (let i = 0; i < noteIds.length; i++) {
+    const raw = rawContents[i];
+    if (raw) {
+      map[noteIds[i]] = parseNoteContent(raw);
+    }
+  }
+  return map;
 }

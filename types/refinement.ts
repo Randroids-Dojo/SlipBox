@@ -10,14 +10,14 @@
 
 import type { NoteId } from "./note";
 
-export type RefinementType = "retitle" | "split" | "merge-suggest" | "update";
-
-export const REFINEMENT_TYPES: RefinementType[] = [
+export const REFINEMENT_TYPES = [
   "retitle",
   "split",
   "merge-suggest",
   "update",
-];
+] as const;
+
+export type RefinementType = typeof REFINEMENT_TYPES[number];
 
 export interface RefinementSuggestion {
   /** Unique key: `${noteId}:${type}` */

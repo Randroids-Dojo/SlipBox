@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAuth } from "@/src/auth";
+import { withAuth } from "@/src/auth";
 import { readSnapshotsIndex } from "@/src/github";
 import type { GraphSnapshot } from "@/types";
 
@@ -46,39 +46,30 @@ function computeDelta(
   };
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = verifyAuth(request);
-    if (!auth.ok) return auth.response!;
+export const GET = withAuth(async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url);
+  const sinceParam = searchParams.get("since");
 
-    const { searchParams } = new URL(request.url);
-    const sinceParam = searchParams.get("since");
+  const { index } = await readSnapshotsIndex();
+  let snapshots = index.snapshots;
 
-    const { index } = await readSnapshotsIndex();
-    let snapshots = index.snapshots;
-
-    if (sinceParam) {
-      const sinceDate = new Date(sinceParam);
-      snapshots = snapshots.filter(
-        (s) => new Date(s.capturedAt) >= sinceDate,
-      );
-    }
-
-    // Attach deltas: first snapshot gets null, each subsequent gets diff vs previous
-    const withDeltas: SnapshotWithDelta[] = snapshots.map((snapshot, i) => {
-      const delta =
-        i === 0 ? null : computeDelta(snapshot, snapshots[i - 1]);
-      return { ...snapshot, delta };
-    });
-
-    return NextResponse.json({
-      snapshots: withDeltas,
-      snapshotCount: withDeltas.length,
-      ...(sinceParam && { since: sinceParam }),
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  if (sinceParam) {
+    const sinceDate = new Date(sinceParam);
+    snapshots = snapshots.filter(
+      (s) => new Date(s.capturedAt) >= sinceDate,
+    );
   }
-}
+
+  // Attach deltas: first snapshot gets null, each subsequent gets diff vs previous
+  const withDeltas: SnapshotWithDelta[] = snapshots.map((snapshot, i) => {
+    const delta =
+      i === 0 ? null : computeDelta(snapshot, snapshots[i - 1]);
+    return { ...snapshot, delta };
+  });
+
+  return NextResponse.json({
+    snapshots: withDeltas,
+    snapshotCount: withDeltas.length,
+    ...(sinceParam && { since: sinceParam }),
+  });
+});

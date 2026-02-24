@@ -13,10 +13,10 @@ export type NoteId = string;
  * - `meta`       — AI-generated cluster summary (Phase 3)
  * - `hypothesis` — AI-generated research hypothesis from a tension (Phase 4)
  */
-export type NoteType = "meta" | "hypothesis";
-
 /** All valid note types, useful for validation. */
-export const NOTE_TYPES: NoteType[] = ["meta", "hypothesis"];
+export const NOTE_TYPES = ["meta", "hypothesis"] as const;
+
+export type NoteType = typeof NOTE_TYPES[number];
 
 /** Frontmatter metadata attached to every note. */
 export interface NoteMetadata {

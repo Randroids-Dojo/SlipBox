@@ -18,19 +18,16 @@ import type { NoteId } from "./note";
  * - `structural-hole`     — a cluster with no typed relations to any note outside the cluster
  * - `meta-note-missing`   — a cluster where no member note has `type: meta` in frontmatter
  */
-export type ExplorationSuggestionType =
-  | "orphan-note"
-  | "close-clusters"
-  | "structural-hole"
-  | "meta-note-missing";
-
 /** All valid exploration suggestion types. */
-export const EXPLORATION_SUGGESTION_TYPES: ExplorationSuggestionType[] = [
+export const EXPLORATION_SUGGESTION_TYPES = [
   "orphan-note",
   "close-clusters",
   "structural-hole",
   "meta-note-missing",
-];
+] as const;
+
+export type ExplorationSuggestionType =
+  typeof EXPLORATION_SUGGESTION_TYPES[number];
 
 /** A single structural gap suggestion. */
 export interface ExplorationSuggestion {

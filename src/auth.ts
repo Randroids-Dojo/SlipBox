@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSlipBoxApiKey } from "./config";
+import { timingSafeEqual } from "./crypto";
 
 export interface AuthResult {
   ok: boolean;
@@ -57,25 +58,28 @@ export function verifyAuth(req: NextRequest): AuthResult {
 }
 
 /**
- * Constant-time string comparison.
+ * Higher-order function that wraps a route handler with:
+ * 1. Bearer token authentication (returns 401/403 on failure)
+ * 2. Centralized error handling (returns 500 on uncaught errors)
  *
- * Prevents timing side-channels when comparing secret values.
- * Both strings are compared byte-by-byte; the runtime is
- * determined by the longer string, not by where they diverge.
+ * Usage:
+ *   export const GET = withAuth(async (request) => {
+ *     // handler body — no auth check or try/catch needed
+ *     return NextResponse.json({ ... });
+ *   });
  */
-function timingSafeEqual(a: string, b: string): boolean {
-  const encoder = new TextEncoder();
-  const bufA = encoder.encode(a);
-  const bufB = encoder.encode(b);
-
-  // Length mismatch leaks the length, but not the content.
-  // We still compare all bytes of the longer string.
-  const len = Math.max(bufA.length, bufB.length);
-  let mismatch = bufA.length !== bufB.length ? 1 : 0;
-
-  for (let i = 0; i < len; i++) {
-    mismatch |= (bufA[i] ?? 0) ^ (bufB[i] ?? 0);
-  }
-
-  return mismatch === 0;
+export function withAuth(
+  handler: (request: NextRequest) => Promise<NextResponse>,
+): (request: NextRequest) => Promise<NextResponse> {
+  return async (request) => {
+    const auth = verifyAuth(request);
+    if (!auth.ok) return auth.response!;
+    try {
+      return await handler(request);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Internal server error";
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  };
 }

@@ -208,7 +208,7 @@ export function parseNoteContent(markdown: string): {
   const typeMatch = frontmatter.match(/^type:\s*(\S+)\s*$/m);
   const rawType = typeMatch ? typeMatch[1] : undefined;
   const type =
-    rawType && (NOTE_TYPES as string[]).includes(rawType)
+    rawType && (NOTE_TYPES as readonly string[]).includes(rawType)
       ? (rawType as NoteType)
       : undefined;
 

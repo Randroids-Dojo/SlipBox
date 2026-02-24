@@ -9,8 +9,8 @@
  * one new GraphSnapshot appended to the SnapshotsIndex.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { verifyAuth } from "@/src/auth";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/src/auth";
 import { captureSnapshot } from "@/src/snapshot";
 import {
   readEmbeddingsIndex,
@@ -22,45 +22,36 @@ import {
   writeSnapshotsIndex,
 } from "@/src/github";
 
-export async function POST(request: NextRequest) {
-  try {
-    const auth = verifyAuth(request);
-    if (!auth.ok) return auth.response!;
+export const POST = withAuth(async () => {
+  // 1. Fetch all five indexes and the existing snapshots index in parallel
+  const [embResult, blResult, clResult, tenResult, decResult, snapResult] =
+    await Promise.all([
+      readEmbeddingsIndex(),
+      readBacklinksIndex(),
+      readClustersIndex(),
+      readTensionsIndex(),
+      readDecayIndex(),
+      readSnapshotsIndex(),
+    ]);
 
-    // 1. Fetch all five indexes and the existing snapshots index in parallel
-    const [embResult, blResult, clResult, tenResult, decResult, snapResult] =
-      await Promise.all([
-        readEmbeddingsIndex(),
-        readBacklinksIndex(),
-        readClustersIndex(),
-        readTensionsIndex(),
-        readDecayIndex(),
-        readSnapshotsIndex(),
-      ]);
+  // 2. Compute the new snapshot
+  const snapshot = captureSnapshot(
+    embResult.index,
+    blResult.index,
+    clResult.index,
+    tenResult.index,
+    decResult.index,
+  );
 
-    // 2. Compute the new snapshot
-    const snapshot = captureSnapshot(
-      embResult.index,
-      blResult.index,
-      clResult.index,
-      tenResult.index,
-      decResult.index,
-    );
+  // 3. Append to snapshots index and persist
+  const snapshotsIndex = snapResult.index;
+  snapshotsIndex.snapshots.push(snapshot);
 
-    // 3. Append to snapshots index and persist
-    const snapshotsIndex = snapResult.index;
-    snapshotsIndex.snapshots.push(snapshot);
+  await writeSnapshotsIndex(
+    snapshotsIndex,
+    snapResult.sha,
+    "Capture graph snapshot",
+  );
 
-    await writeSnapshotsIndex(
-      snapshotsIndex,
-      snapResult.sha,
-      "Capture graph snapshot",
-    );
-
-    return NextResponse.json({ snapshot });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+  return NextResponse.json({ snapshot });
+});

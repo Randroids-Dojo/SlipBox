@@ -1,59 +1,16 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
+import {
+  TEST_API_KEY,
+  setupTestEnv,
+  setupFetchSpy,
+  fakeGitHub404,
+  fakeGitHubContents,
+} from "../__test-setup__";
 import { GET } from "./route";
 
-// ---------------------------------------------------------------------------
-// Environment setup
-// ---------------------------------------------------------------------------
-
-const TEST_API_KEY = "sk-test-slipbox-key";
-
-beforeEach(() => {
-  process.env.SLIPBOX_API_KEY = TEST_API_KEY;
-  process.env.GITHUB_TOKEN = "ghp_test_token";
-  process.env.PRIVATEBOX_OWNER = "test-owner";
-  process.env.PRIVATEBOX_REPO = "test-repo";
-});
-
-afterEach(() => {
-  delete process.env.SLIPBOX_API_KEY;
-  delete process.env.GITHUB_TOKEN;
-  delete process.env.PRIVATEBOX_OWNER;
-  delete process.env.PRIVATEBOX_REPO;
-});
-
-// ---------------------------------------------------------------------------
-// Fetch mock helpers
-// ---------------------------------------------------------------------------
-
-let fetchSpy: ReturnType<typeof vi.spyOn>;
-
-beforeEach(() => {
-  fetchSpy = vi.spyOn(globalThis, "fetch");
-});
-
-afterEach(() => {
-  fetchSpy.mockRestore();
-});
-
-function fakeGitHub404() {
-  return {
-    ok: false,
-    status: 404,
-    json: async () => ({ message: "Not Found" }),
-    text: async () => "Not Found",
-  } as unknown as Response;
-}
-
-function fakeGitHubContents(content: string, sha: string = "sha123") {
-  const encoded = Buffer.from(content, "utf-8").toString("base64");
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({ content: encoded, sha, encoding: "base64" }),
-    text: async () => "",
-  } as unknown as Response;
-}
+setupTestEnv();
+const fetchSpy = setupFetchSpy();
 
 // ---------------------------------------------------------------------------
 // Test data
@@ -125,7 +82,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("returns empty snapshots array when no snapshots exist", async () => {
-    fetchSpy.mockResolvedValueOnce(fakeGitHub404());
+    fetchSpy.spy.mockResolvedValueOnce(fakeGitHub404());
 
     const response = await GET(makeRequest());
     expect(response.status).toBe(200);
@@ -137,7 +94,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("returns all snapshots with deltas", async () => {
-    fetchSpy.mockResolvedValueOnce(
+    fetchSpy.spy.mockResolvedValueOnce(
       fakeGitHubContents(JSON.stringify(snapshotsIndex), "snap-sha"),
     );
 
@@ -169,7 +126,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("filters snapshots by since parameter", async () => {
-    fetchSpy.mockResolvedValueOnce(
+    fetchSpy.spy.mockResolvedValueOnce(
       fakeGitHubContents(JSON.stringify(snapshotsIndex), "snap-sha"),
     );
 
@@ -186,7 +143,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("returns first snapshot with null delta after filtering with since", async () => {
-    fetchSpy.mockResolvedValueOnce(
+    fetchSpy.spy.mockResolvedValueOnce(
       fakeGitHubContents(JSON.stringify(snapshotsIndex), "snap-sha"),
     );
 
@@ -201,7 +158,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("does not include since in response when not provided", async () => {
-    fetchSpy.mockResolvedValueOnce(fakeGitHub404());
+    fetchSpy.spy.mockResolvedValueOnce(fakeGitHub404());
 
     const response = await GET(makeRequest());
     const json = await response.json();
@@ -210,7 +167,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("includes since in response when provided", async () => {
-    fetchSpy.mockResolvedValueOnce(fakeGitHub404());
+    fetchSpy.spy.mockResolvedValueOnce(fakeGitHub404());
 
     const response = await GET(
       makeRequest("http://localhost/api/analytics?since=2026-01-01"),
@@ -221,7 +178,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("returns empty when since is after all snapshots", async () => {
-    fetchSpy.mockResolvedValueOnce(
+    fetchSpy.spy.mockResolvedValueOnce(
       fakeGitHubContents(JSON.stringify(snapshotsIndex), "snap-sha"),
     );
 
@@ -235,7 +192,7 @@ describe("GET /api/analytics", () => {
   });
 
   it("preserves all snapshot fields in the response", async () => {
-    fetchSpy.mockResolvedValueOnce(
+    fetchSpy.spy.mockResolvedValueOnce(
       fakeGitHubContents(
         JSON.stringify({ snapshots: [snapshot1] }),
         "snap-sha",

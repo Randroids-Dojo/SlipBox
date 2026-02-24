@@ -1,68 +1,17 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
+import {
+  TEST_API_KEY,
+  setupTestEnv,
+  setupFetchSpy,
+  fakeGitHub404,
+  fakeGitHubContents,
+  fakeGitHubPut,
+} from "../__test-setup__";
 import { POST } from "./route";
 
-// ---------------------------------------------------------------------------
-// Environment setup
-// ---------------------------------------------------------------------------
-
-const TEST_API_KEY = "sk-test-slipbox-key";
-
-beforeEach(() => {
-  process.env.SLIPBOX_API_KEY = TEST_API_KEY;
-  process.env.GITHUB_TOKEN = "ghp_test_token";
-  process.env.PRIVATEBOX_OWNER = "test-owner";
-  process.env.PRIVATEBOX_REPO = "test-repo";
-});
-
-afterEach(() => {
-  delete process.env.SLIPBOX_API_KEY;
-  delete process.env.GITHUB_TOKEN;
-  delete process.env.PRIVATEBOX_OWNER;
-  delete process.env.PRIVATEBOX_REPO;
-});
-
-// ---------------------------------------------------------------------------
-// Fetch mock helpers
-// ---------------------------------------------------------------------------
-
-let fetchSpy: ReturnType<typeof vi.spyOn>;
-
-beforeEach(() => {
-  fetchSpy = vi.spyOn(globalThis, "fetch");
-});
-
-afterEach(() => {
-  fetchSpy.mockRestore();
-});
-
-function fakeGitHub404() {
-  return {
-    ok: false,
-    status: 404,
-    json: async () => ({ message: "Not Found" }),
-    text: async () => "Not Found",
-  } as unknown as Response;
-}
-
-function fakeGitHubContents(content: string, sha: string = "sha123") {
-  const encoded = Buffer.from(content, "utf-8").toString("base64");
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({ content: encoded, sha, encoding: "base64" }),
-    text: async () => "",
-  } as unknown as Response;
-}
-
-function fakeGitHubPut(sha: string = "newsha") {
-  return {
-    ok: true,
-    status: 201,
-    json: async () => ({ content: { sha } }),
-    text: async () => "",
-  } as unknown as Response;
-}
+setupTestEnv();
+const fetchSpy = setupFetchSpy();
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -212,7 +161,7 @@ describe("POST /api/relations", () => {
   });
 
   it("rejects a pair not present in the backlinks index", async () => {
-    fetchSpy
+    fetchSpy.spy
       // readBacklinksIndex — only A↔B exists
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(BACKLINKS_A_B)))
       // readRelationsIndex
@@ -238,7 +187,7 @@ describe("POST /api/relations", () => {
   });
 
   it("classifies a pair and commits the relations index", async () => {
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(BACKLINKS_A_B)))
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(EMPTY_RELATIONS)))
       .mockResolvedValueOnce(fakeGitHubPut());
@@ -263,7 +212,7 @@ describe("POST /api/relations", () => {
     expect(json.total).toBe(1);
 
     // Verify write was called with correct content
-    const writeCalls = fetchSpy.mock.calls.filter(
+    const writeCalls = fetchSpy.spy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
     expect(writeCalls).toHaveLength(1);
@@ -281,7 +230,7 @@ describe("POST /api/relations", () => {
   });
 
   it("classifies multiple pairs in a single request", async () => {
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(
         fakeGitHubContents(JSON.stringify(BACKLINKS_A_B_AND_A_C)),
       )
@@ -314,7 +263,7 @@ describe("POST /api/relations", () => {
   });
 
   it("overwrites an existing relation for the same pair (upsert)", async () => {
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(BACKLINKS_A_B)))
       .mockResolvedValueOnce(
         fakeGitHubContents(JSON.stringify(RELATIONS_A_B_EXISTING)),
@@ -340,7 +289,7 @@ describe("POST /api/relations", () => {
     expect(json.updated).toBe(1);
     expect(json.total).toBe(1);
 
-    const writeCalls = fetchSpy.mock.calls.filter(
+    const writeCalls = fetchSpy.spy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
     const body = JSON.parse(writeCalls[0][1]!.body as string);
@@ -353,7 +302,7 @@ describe("POST /api/relations", () => {
   });
 
   it("accepts pairs submitted in reverse canonical order", async () => {
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(BACKLINKS_A_B)))
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(EMPTY_RELATIONS)))
       .mockResolvedValueOnce(fakeGitHubPut());
@@ -376,7 +325,7 @@ describe("POST /api/relations", () => {
     const json = await response.json();
     expect(json.updated).toBe(1);
 
-    const writeCalls = fetchSpy.mock.calls.filter(
+    const writeCalls = fetchSpy.spy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
     const body = JSON.parse(writeCalls[0][1]!.body as string);

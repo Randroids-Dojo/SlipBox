@@ -1,59 +1,16 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
+import {
+  TEST_API_KEY,
+  setupTestEnv,
+  setupFetchSpy,
+  fakeGitHub404,
+  fakeGitHubContents,
+} from "../__test-setup__";
 import { GET } from "./route";
 
-// ---------------------------------------------------------------------------
-// Environment setup
-// ---------------------------------------------------------------------------
-
-const TEST_API_KEY = "sk-test-slipbox-key";
-
-beforeEach(() => {
-  process.env.SLIPBOX_API_KEY = TEST_API_KEY;
-  process.env.GITHUB_TOKEN = "ghp_test_token";
-  process.env.PRIVATEBOX_OWNER = "test-owner";
-  process.env.PRIVATEBOX_REPO = "test-repo";
-});
-
-afterEach(() => {
-  delete process.env.SLIPBOX_API_KEY;
-  delete process.env.GITHUB_TOKEN;
-  delete process.env.PRIVATEBOX_OWNER;
-  delete process.env.PRIVATEBOX_REPO;
-});
-
-// ---------------------------------------------------------------------------
-// Fetch mock helpers
-// ---------------------------------------------------------------------------
-
-let fetchSpy: ReturnType<typeof vi.spyOn>;
-
-beforeEach(() => {
-  fetchSpy = vi.spyOn(globalThis, "fetch");
-});
-
-afterEach(() => {
-  fetchSpy.mockRestore();
-});
-
-function fakeGitHub404() {
-  return {
-    ok: false,
-    status: 404,
-    json: async () => ({ message: "Not Found" }),
-    text: async () => "Not Found",
-  } as unknown as Response;
-}
-
-function fakeGitHubContents(content: string, sha: string = "sha123") {
-  const encoded = Buffer.from(content, "utf-8").toString("base64");
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({ content: encoded, sha, encoding: "base64" }),
-    text: async () => "",
-  } as unknown as Response;
-}
+setupTestEnv();
+const fetchSpy = setupFetchSpy();
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -132,7 +89,7 @@ describe("GET /api/refinement-data", () => {
   });
 
   it("returns empty state when no clusters exist", async () => {
-    fetchSpy
+    fetchSpy.spy
       // Read clusters.json → 404
       .mockResolvedValueOnce(fakeGitHub404())
       // Read decay.json → 404
@@ -153,7 +110,7 @@ describe("GET /api/refinement-data", () => {
     const rawNoteB = serializedNote(NOTE_B, "Title B", "Body B.");
     const rawNoteC = serializedNote(NOTE_C, "Title C", "Body C.");
 
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(CLUSTERS)))
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(DECAY)))
       .mockResolvedValueOnce(fakeGitHubContents(rawNoteA))
@@ -185,7 +142,7 @@ describe("GET /api/refinement-data", () => {
     const rawNoteA = serializedNote(NOTE_A, "Title A", "Body A.");
     const rawNoteB = serializedNote(NOTE_B, "Title B", "Body B.");
 
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(CLUSTERS)))
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(DECAY)))
       .mockResolvedValueOnce(fakeGitHubContents(rawNoteA))
@@ -204,7 +161,7 @@ describe("GET /api/refinement-data", () => {
   });
 
   it("returns not-found message for unknown clusterId", async () => {
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(CLUSTERS)))
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(DECAY)));
 

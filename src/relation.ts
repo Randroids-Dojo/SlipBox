@@ -33,7 +33,7 @@ export function canonicalKey(noteA: NoteId, noteB: NoteId): string {
 
 /** Returns true if the given string is a valid RelationType. */
 export function isValidRelationType(value: string): value is RelationType {
-  return (RELATION_TYPES as string[]).includes(value);
+  return (RELATION_TYPES as readonly string[]).includes(value);
 }
 
 // ---------------------------------------------------------------------------

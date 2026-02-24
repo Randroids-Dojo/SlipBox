@@ -19,21 +19,16 @@ import type { NoteId } from "./note";
  * - is-example-of:   noteA is a concrete instance of the concept in noteB.
  * - contrasts-with:  noteA and noteB highlight different aspects of the same topic.
  */
-export type RelationType =
-  | "supports"
-  | "contradicts"
-  | "refines"
-  | "is-example-of"
-  | "contrasts-with";
-
 /** All valid relation types, useful for validation. */
-export const RELATION_TYPES: RelationType[] = [
+export const RELATION_TYPES = [
   "supports",
   "contradicts",
   "refines",
   "is-example-of",
   "contrasts-with",
-];
+] as const;
+
+export type RelationType = typeof RELATION_TYPES[number];
 
 /** A typed semantic edge between two notes. */
 export interface TypedLink {

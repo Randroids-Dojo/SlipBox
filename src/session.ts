@@ -11,6 +11,9 @@
  */
 
 import type { NextRequest } from "next/server";
+import { timingSafeEqual } from "./crypto";
+
+export { timingSafeEqual };
 
 export const SESSION_COOKIE = "slipbox_session";
 
@@ -66,20 +69,4 @@ export async function verifySessionAuth(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return false;
   return verifySessionToken(token, secret);
-}
-
-/**
- * Constant-time string comparison.
- * Prevents timing side-channels when comparing secret values.
- */
-export function timingSafeEqual(a: string, b: string): boolean {
-  const encoder = new TextEncoder();
-  const bufA = encoder.encode(a);
-  const bufB = encoder.encode(b);
-  const len = Math.max(bufA.length, bufB.length);
-  let mismatch = bufA.length !== bufB.length ? 1 : 0;
-  for (let i = 0; i < len; i++) {
-    mismatch |= (bufA[i] ?? 0) ^ (bufB[i] ?? 0);
-  }
-  return mismatch === 0;
 }

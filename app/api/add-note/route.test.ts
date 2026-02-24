@@ -1,42 +1,17 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import {
+  TEST_API_KEY,
+  setupTestEnv,
+  setupFetchSpy,
+  fakeGitHub404,
+  fakeGitHubContents,
+  fakeGitHubPut,
+} from "../__test-setup__";
 import { POST } from "./route";
 
-// ---------------------------------------------------------------------------
-// Environment setup
-// ---------------------------------------------------------------------------
-
-const TEST_API_KEY = "sk-test-slipbox-key";
-
-beforeEach(() => {
-  process.env.SLIPBOX_API_KEY = TEST_API_KEY;
-  process.env.OPENAI_API_KEY = "sk-test";
-  process.env.GITHUB_TOKEN = "ghp_test_token";
-  process.env.PRIVATEBOX_OWNER = "test-owner";
-  process.env.PRIVATEBOX_REPO = "test-repo";
-});
-
-afterEach(() => {
-  delete process.env.SLIPBOX_API_KEY;
-  delete process.env.OPENAI_API_KEY;
-  delete process.env.GITHUB_TOKEN;
-  delete process.env.PRIVATEBOX_OWNER;
-  delete process.env.PRIVATEBOX_REPO;
-});
-
-// ---------------------------------------------------------------------------
-// Fetch mock helpers
-// ---------------------------------------------------------------------------
-
-let fetchSpy: ReturnType<typeof vi.spyOn>;
-
-beforeEach(() => {
-  fetchSpy = vi.spyOn(globalThis, "fetch");
-});
-
-afterEach(() => {
-  fetchSpy.mockRestore();
-});
+setupTestEnv({ OPENAI_API_KEY: "sk-test" });
+const fetchSpy = setupFetchSpy();
 
 const FAKE_VECTOR = [0.1, 0.2, 0.3, 0.4, 0.5];
 
@@ -49,34 +24,6 @@ function fakeOpenAIEmbeddingResponse() {
       model: "text-embedding-3-large",
       usage: { prompt_tokens: 5, total_tokens: 5 },
     }),
-    text: async () => "",
-  } as unknown as Response;
-}
-
-function fakeGitHub404() {
-  return {
-    ok: false,
-    status: 404,
-    json: async () => ({ message: "Not Found" }),
-    text: async () => "Not Found",
-  } as unknown as Response;
-}
-
-function fakeGitHubContents(content: string, sha: string = "sha123") {
-  const encoded = Buffer.from(content, "utf-8").toString("base64");
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({ content: encoded, sha, encoding: "base64" }),
-    text: async () => "",
-  } as unknown as Response;
-}
-
-function fakeGitHubPut(sha: string = "newsha") {
-  return {
-    ok: true,
-    status: 201,
-    json: async () => ({ content: { sha } }),
     text: async () => "",
   } as unknown as Response;
 }
@@ -120,7 +67,7 @@ describe("POST /api/add-note", () => {
     // 6. Read embeddings.json (404 → empty) — upsert re-fetch
     // 7. Write embeddings.json — upsert write
 
-    fetchSpy
+    fetchSpy.spy
       // 1. OpenAI embedding call
       .mockResolvedValueOnce(fakeOpenAIEmbeddingResponse())
       // 2. Read embeddings.json → 404 (similarity pass)
@@ -144,11 +91,11 @@ describe("POST /api/add-note", () => {
     expect(json.linkedNotes).toEqual([]);
 
     // Verify OpenAI was called
-    const openaiCall = fetchSpy.mock.calls[0];
+    const openaiCall = fetchSpy.spy.mock.calls[0];
     expect(openaiCall[0]).toBe("https://api.openai.com/v1/embeddings");
 
     // Verify 3 write calls were made (note + backlinks + embeddings)
-    const writeCalls = fetchSpy.mock.calls.filter(
+    const writeCalls = fetchSpy.spy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
     expect(writeCalls).toHaveLength(3);
@@ -162,7 +109,7 @@ describe("POST /api/add-note", () => {
   });
 
   it("creates a meta-note and returns type in response", async () => {
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeOpenAIEmbeddingResponse())
       .mockResolvedValueOnce(fakeGitHub404()) // embeddings
       .mockResolvedValueOnce(fakeGitHubPut("note-sha")) // write note
@@ -178,7 +125,7 @@ describe("POST /api/add-note", () => {
     expect(json.type).toBe("meta");
 
     // Verify the note file written to GitHub contains type: meta in frontmatter
-    const writeCalls = fetchSpy.mock.calls.filter(
+    const writeCalls = fetchSpy.spy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
     const noteWrite = writeCalls[0];
@@ -200,7 +147,7 @@ describe("POST /api/add-note", () => {
       },
     };
 
-    fetchSpy
+    fetchSpy.spy
       // 1. OpenAI embedding
       .mockResolvedValueOnce(fakeOpenAIEmbeddingResponse())
       // 2. Read embeddings.json (has existing note) — similarity pass

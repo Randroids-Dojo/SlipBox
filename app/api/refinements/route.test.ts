@@ -1,68 +1,17 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
+import {
+  TEST_API_KEY,
+  setupTestEnv,
+  setupFetchSpy,
+  fakeGitHub404,
+  fakeGitHubContents,
+  fakeGitHubPut,
+} from "../__test-setup__";
 import { POST } from "./route";
 
-// ---------------------------------------------------------------------------
-// Environment setup
-// ---------------------------------------------------------------------------
-
-const TEST_API_KEY = "sk-test-slipbox-key";
-
-beforeEach(() => {
-  process.env.SLIPBOX_API_KEY = TEST_API_KEY;
-  process.env.GITHUB_TOKEN = "ghp_test_token";
-  process.env.PRIVATEBOX_OWNER = "test-owner";
-  process.env.PRIVATEBOX_REPO = "test-repo";
-});
-
-afterEach(() => {
-  delete process.env.SLIPBOX_API_KEY;
-  delete process.env.GITHUB_TOKEN;
-  delete process.env.PRIVATEBOX_OWNER;
-  delete process.env.PRIVATEBOX_REPO;
-});
-
-// ---------------------------------------------------------------------------
-// Fetch mock helpers
-// ---------------------------------------------------------------------------
-
-let fetchSpy: ReturnType<typeof vi.spyOn>;
-
-beforeEach(() => {
-  fetchSpy = vi.spyOn(globalThis, "fetch");
-});
-
-afterEach(() => {
-  fetchSpy.mockRestore();
-});
-
-function fakeGitHub404() {
-  return {
-    ok: false,
-    status: 404,
-    json: async () => ({ message: "Not Found" }),
-    text: async () => "Not Found",
-  } as unknown as Response;
-}
-
-function fakeGitHubContents(content: string, sha: string = "sha123") {
-  const encoded = Buffer.from(content, "utf-8").toString("base64");
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({ content: encoded, sha, encoding: "base64" }),
-    text: async () => "",
-  } as unknown as Response;
-}
-
-function fakeGitHubPut(sha: string = "newsha") {
-  return {
-    ok: true,
-    status: 201,
-    json: async () => ({ content: { sha } }),
-    text: async () => "",
-  } as unknown as Response;
-}
+setupTestEnv();
+const fetchSpy = setupFetchSpy();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -137,7 +86,7 @@ describe("POST /api/refinements", () => {
   });
 
   it("persists valid suggestions and returns updated count", async () => {
-    fetchSpy
+    fetchSpy.spy
       // Read refinements.json → 404 (empty)
       .mockResolvedValueOnce(fakeGitHub404())
       // Write refinements.json
@@ -169,7 +118,7 @@ describe("POST /api/refinements", () => {
     expect(json.total).toBe(2);
 
     // Verify the written content
-    const writeCalls = fetchSpy.mock.calls.filter(
+    const writeCalls = fetchSpy.spy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
     expect(writeCalls).toHaveLength(1);
@@ -205,7 +154,7 @@ describe("POST /api/refinements", () => {
       updatedAt: "2026-01-01T00:00:00Z",
     };
 
-    fetchSpy
+    fetchSpy.spy
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(existing), "old-sha"))
       .mockResolvedValueOnce(fakeGitHubPut("new-sha"));
 
@@ -228,7 +177,7 @@ describe("POST /api/refinements", () => {
     // total is still 1 (upsert, not append)
     expect(json.total).toBe(1);
 
-    const writeCalls = fetchSpy.mock.calls.filter(
+    const writeCalls = fetchSpy.spy.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "PUT",
     );
     const body = JSON.parse(writeCalls[0][1]!.body as string);
