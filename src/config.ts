@@ -197,6 +197,16 @@ export const RELATIONS_INDEX_PATH = optionalEnv(
 );
 
 // ---------------------------------------------------------------------------
+// Refinement Suggestions
+// ---------------------------------------------------------------------------
+
+/** Path to the refinements index file. */
+export const REFINEMENTS_INDEX_PATH = optionalEnv(
+  "REFINEMENTS_INDEX_PATH",
+  "index/refinements.json",
+);
+
+// ---------------------------------------------------------------------------
 // Decay Detection
 // ---------------------------------------------------------------------------
 

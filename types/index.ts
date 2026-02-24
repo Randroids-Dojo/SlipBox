@@ -29,3 +29,6 @@ export { RELATION_TYPES, emptyRelationsIndex } from "./relation";
 
 export type { DecayReason, DecayRecord, DecayIndex } from "./decay";
 export { emptyDecayIndex } from "./decay";
+
+export type { RefinementType, RefinementSuggestion, RefinementsIndex } from "./refinement";
+export { REFINEMENT_TYPES, emptyRefinementsIndex } from "./refinement";

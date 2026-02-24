@@ -6,7 +6,9 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-21 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, and hypothesis context pipeline is implemented. `GET /api/hypothesis-data` exposes tension pairs with full note content and cluster sibling notes for local LLM hypothesis generation; hypotheses are submitted back as `type: hypothesis` notes via the existing `POST /api/add-note`. 225 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-22 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, hypothesis context, and advisory refinement suggestion pipeline is implemented. `GET /api/refinement-data` exposes clusters with note content and decay records for local LLM refinement analysis; suggestions are submitted back via `POST /api/refinements` and stored advisory-only in `index/refinements.json`. 236 unit and integration tests pass.
+
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-22 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass). 236 unit and integration tests pass.
 
 **Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
@@ -372,18 +374,18 @@ Expose tension pairs with cluster context so a local LLM can generate research h
 
 ---
 
-## Priority 22 — Refinement Pass (GET + POST)
+## Priority 22 — Refinement Pass (GET + POST) ✓
 
 Advisory-only note improvement suggestions from a local LLM. No automatic edits.
 
-- [ ] `types/refinement.ts` — `RefinementType`, `RefinementSuggestion`, `RefinementsIndex` type definitions
-- [ ] `RefinementType`: `'retitle' | 'split' | 'merge-suggest' | 'update'`
-- [ ] `RefinementSuggestion` — id, noteId, type, suggestion (proposed change), reason, relatedNoteIds (for merge suggestions), generatedAt
-- [ ] `app/api/refinement-data/route.ts` — expose clusters with full note content + decay records; optional `?clusterId=X` param
-- [ ] `app/api/refinements/route.ts` — accept suggestions array, upsert to `index/refinements.json` by noteId + type
-- [ ] `readRefinementsIndex()`, `writeRefinementsIndex()` GitHub helpers
-- [ ] Code comment constraint: "Suggestions only — SlipBox never modifies user notes automatically."
-- [ ] Integration tests (4+ via vitest)
+- [x] `types/refinement.ts` — `RefinementType`, `RefinementSuggestion`, `RefinementsIndex` type definitions
+- [x] `RefinementType`: `'retitle' | 'split' | 'merge-suggest' | 'update'`
+- [x] `RefinementSuggestion` — id, noteId, type, suggestion (proposed change), reason, relatedNoteIds (for merge suggestions), generatedAt
+- [x] `app/api/refinement-data/route.ts` — expose clusters with full note content + decay records; optional `?clusterId=X` param
+- [x] `app/api/refinements/route.ts` — accept suggestions array, upsert to `index/refinements.json` by noteId + type
+- [x] `readRefinementsIndex()`, `writeRefinementsIndex()` GitHub helpers
+- [x] Code comment constraint: "Suggestions only — SlipBox never modifies user notes automatically."
+- [x] Integration tests (11 via vitest)
 
 **Done when:** Suggestions are persisted and queryable; they do not touch note files.
 

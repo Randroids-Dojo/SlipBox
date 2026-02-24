@@ -13,12 +13,14 @@ import {
   type EmbeddingsIndex,
   type NoteEmbedding,
   type NoteId,
+  type RefinementsIndex,
   type RelationsIndex,
   type TensionsIndex,
   emptyBacklinksIndex,
   emptyClustersIndex,
   emptyDecayIndex,
   emptyEmbeddingsIndex,
+  emptyRefinementsIndex,
   emptyRelationsIndex,
   emptyTensionsIndex,
 } from "@/types";
@@ -27,6 +29,7 @@ import {
   CLUSTERS_INDEX_PATH,
   DECAY_INDEX_PATH,
   EMBEDDINGS_INDEX_PATH,
+  REFINEMENTS_INDEX_PATH,
   RELATIONS_INDEX_PATH,
   TENSIONS_INDEX_PATH,
   GITHUB_API_BASE,
@@ -444,6 +447,37 @@ export async function writeDecayIndex(
 ): Promise<string> {
   return writeFile({
     path: DECAY_INDEX_PATH,
+    content: JSON.stringify(index, null, 2) + "\n",
+    message,
+    sha: sha ?? undefined,
+  });
+}
+
+/**
+ * Read the refinements index from PrivateBox.
+ * Returns an empty index if the file does not yet exist.
+ */
+export async function readRefinementsIndex(): Promise<{
+  index: RefinementsIndex;
+  sha: string | null;
+}> {
+  const file = await readFile(REFINEMENTS_INDEX_PATH);
+  if (!file) {
+    return { index: emptyRefinementsIndex(), sha: null };
+  }
+  return { index: JSON.parse(file.content) as RefinementsIndex, sha: file.sha };
+}
+
+/**
+ * Write the refinements index to PrivateBox.
+ */
+export async function writeRefinementsIndex(
+  index: RefinementsIndex,
+  sha: string | null,
+  message: string = "Update refinements index",
+): Promise<string> {
+  return writeFile({
+    path: REFINEMENTS_INDEX_PATH,
     content: JSON.stringify(index, null, 2) + "\n",
     message,
     sha: sha ?? undefined,

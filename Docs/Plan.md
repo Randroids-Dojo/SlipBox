@@ -42,6 +42,8 @@ Contains:
     relations         — POST: persist typed relation records from LLM agent
     decay-pass        — POST: score notes for staleness; commit decay.json
     hypothesis-data   — GET: fetch tension/cluster data for LLM hypothesis generation
+    refinement-data   — GET: fetch cluster/decay data for LLM refinement analysis
+    refinements       — POST: persist advisory refinement suggestions from LLM agent
 
 /src
   auth.ts
@@ -62,6 +64,7 @@ Contains:
   embedding.ts
   graph.ts
   note.ts
+  refinement.ts
   relation.ts
   tension.ts
 
@@ -196,6 +199,26 @@ submitted back via add-note with `type: hypothesis` in frontmatter.
 
 ---
 
+## GET /api/refinement-data
+
+Returns clusters with full note content and decay records for each cluster member.
+Supports `?clusterId=X` to restrict to a single cluster.
+Used by local LLM agents to generate advisory refinement suggestions.
+
+---
+
+## POST /api/refinements
+
+Input: `{ "suggestions": [{ "noteId", "type", "suggestion", "reason", "relatedNoteIds"? }] }`
+
+Accepts advisory refinement suggestions from a local LLM agent.
+Validates types (`retitle`, `split`, `merge-suggest`, `update`).
+Upserts into refinements.json by `${noteId}:${type}` key (one suggestion per note per type).
+Suggestions only — SlipBox never modifies user notes automatically.
+Output: `{ "updated", "total" }`
+
+---
+
 # 5. Embedding Strategy
 
 Default:
@@ -274,9 +297,8 @@ Nightly scheduled passes (GitHub Actions).
 GET /api/theme-data for LLM-driven meta-note synthesis.
 
 Phase 4 (in progress):
-Typed semantic edges, staleness detection, and hypothesis context — complete through Priority 21.
-Remaining: refinement suggestions, snapshot timeline, exploration pass,
-nightly Phase 4 automation, graph UI.
+Typed semantic edges, staleness detection, hypothesis context, and advisory refinement suggestions — complete through Priority 22.
+Remaining: snapshot timeline, exploration pass, nightly Phase 4 automation, graph UI.
 
 ---
 
