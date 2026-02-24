@@ -216,6 +216,12 @@ export const DECAY_INDEX_PATH = optionalEnv(
   "index/decay.json",
 );
 
+/** Path to the snapshots index file. */
+export const SNAPSHOTS_INDEX_PATH = optionalEnv(
+  "SNAPSHOTS_INDEX_PATH",
+  "index/snapshots.json",
+);
+
 /**
  * Maximum cosine similarity between a note and its cluster centroid before
  * the note is considered a cluster outlier and receives a decay penalty.

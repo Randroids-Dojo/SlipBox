@@ -32,3 +32,6 @@ export { emptyDecayIndex } from "./decay";
 
 export type { RefinementType, RefinementSuggestion, RefinementsIndex } from "./refinement";
 export { REFINEMENT_TYPES, emptyRefinementsIndex } from "./refinement";
+
+export type { GraphSnapshot, SnapshotsIndex } from "./snapshot";
+export { emptySnapshotsIndex } from "./snapshot";

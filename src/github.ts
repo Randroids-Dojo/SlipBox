@@ -15,6 +15,7 @@ import {
   type NoteId,
   type RefinementsIndex,
   type RelationsIndex,
+  type SnapshotsIndex,
   type TensionsIndex,
   emptyBacklinksIndex,
   emptyClustersIndex,
@@ -22,6 +23,7 @@ import {
   emptyEmbeddingsIndex,
   emptyRefinementsIndex,
   emptyRelationsIndex,
+  emptySnapshotsIndex,
   emptyTensionsIndex,
 } from "@/types";
 import {
@@ -31,6 +33,7 @@ import {
   EMBEDDINGS_INDEX_PATH,
   REFINEMENTS_INDEX_PATH,
   RELATIONS_INDEX_PATH,
+  SNAPSHOTS_INDEX_PATH,
   TENSIONS_INDEX_PATH,
   GITHUB_API_BASE,
   getGitHubToken,
@@ -499,4 +502,35 @@ export async function upsertEmbeddingWithRetry(
     (index) => { index.embeddings[noteId] = embedding; },
     message,
   );
+}
+
+/**
+ * Read the snapshots index from PrivateBox.
+ * Returns an empty index if the file does not yet exist.
+ */
+export async function readSnapshotsIndex(): Promise<{
+  index: SnapshotsIndex;
+  sha: string | null;
+}> {
+  const file = await readFile(SNAPSHOTS_INDEX_PATH);
+  if (!file) {
+    return { index: emptySnapshotsIndex(), sha: null };
+  }
+  return { index: JSON.parse(file.content) as SnapshotsIndex, sha: file.sha };
+}
+
+/**
+ * Write the snapshots index to PrivateBox.
+ */
+export async function writeSnapshotsIndex(
+  index: SnapshotsIndex,
+  sha: string | null,
+  message: string = "Update snapshots index",
+): Promise<string> {
+  return writeFile({
+    path: SNAPSHOTS_INDEX_PATH,
+    content: JSON.stringify(index, null, 2) + "\n",
+    message,
+    sha: sha ?? undefined,
+  });
 }
