@@ -41,6 +41,7 @@ Contains:
     link-data         — GET: fetch backlink pairs with content for LLM classification
     relations         — POST: persist typed relation records from LLM agent
     decay-pass        — POST: score notes for staleness; commit decay.json
+    hypothesis-data   — GET: fetch tension/cluster data for LLM hypothesis generation
 
 /src
   auth.ts
@@ -187,6 +188,14 @@ Output: `{ "updated", "total" }`
 
 ---
 
+## GET /api/hypothesis-data
+
+Returns each tension pair with full note content for both tension notes and all
+cluster sibling notes. Used by local LLM agents to generate hypothesis notes,
+submitted back via add-note with `type: hypothesis` in frontmatter.
+
+---
+
 # 5. Embedding Strategy
 
 Default:
@@ -265,9 +274,9 @@ Nightly scheduled passes (GitHub Actions).
 GET /api/theme-data for LLM-driven meta-note synthesis.
 
 Phase 4 (in progress):
-Typed semantic edges (relations) and staleness detection — complete through Priority 20.
-Remaining: hypothesis generation, refinement suggestions,
-snapshot timeline, exploration pass, nightly Phase 4 automation, graph UI.
+Typed semantic edges, staleness detection, and hypothesis context — complete through Priority 21.
+Remaining: refinement suggestions, snapshot timeline, exploration pass,
+nightly Phase 4 automation, graph UI.
 
 ---
 

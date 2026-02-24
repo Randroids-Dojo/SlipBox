@@ -6,7 +6,7 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-20 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, and staleness detection pipeline is implemented. The decay module scores notes on four pure-math signals (no-links, low-link-density, cluster-outlier, no-cluster), caps at 1.0, and only persists notes at or above `DECAY_SCORE_THRESHOLD`. `readDecayIndex()` and `writeDecayIndex()` GitHub helpers and `DECAY_INDEX_PATH`, `CLUSTER_OUTLIER_THRESHOLD`, `DECAY_SCORE_THRESHOLD` config tunables are in place. 219 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-21 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, and hypothesis context pipeline is implemented. `GET /api/hypothesis-data` exposes tension pairs with full note content and cluster sibling notes for local LLM hypothesis generation; hypotheses are submitted back as `type: hypothesis` notes via the existing `POST /api/add-note`. 225 unit and integration tests pass.
 
 **Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
@@ -357,16 +357,16 @@ Pure-math staleness detection — no LLM, no external dependencies. Same pattern
 
 ---
 
-## Priority 21 — GET /api/hypothesis-data
+## Priority 21 — GET /api/hypothesis-data ✓
 
 Expose tension pairs with cluster context so a local LLM can generate research hypotheses.
 
-- [ ] `app/api/hypothesis-data/route.ts`
-- [ ] Fetch tensions + clusters + note contents in parallel
-- [ ] Return `{ tensions[], tensionCount, computedAt }` — each tension includes full noteA/noteB content + cluster sibling notes
-- [ ] Local LLM generates hypothesis statement, 2–3 open questions, and cluster combination suggestions
-- [ ] Hypotheses submitted back as notes via existing `POST /api/add-note` with `type: hypothesis` frontmatter tag (no new storage format needed)
-- [ ] Integration tests (4+ via vitest)
+- [x] `app/api/hypothesis-data/route.ts`
+- [x] Fetch tensions + clusters + note contents in parallel
+- [x] Return `{ tensions[], tensionCount, computedAt }` — each tension includes full noteA/noteB content + cluster sibling notes
+- [x] Local LLM generates hypothesis statement, 2–3 open questions, and cluster combination suggestions
+- [x] Hypotheses submitted back as notes via existing `POST /api/add-note` with `type: hypothesis` frontmatter tag (no new storage format needed)
+- [x] Integration tests (6 via vitest)
 
 **Done when:** Endpoint returns tension + cluster context sufficient for a local LLM to generate and submit hypothesis notes.
 

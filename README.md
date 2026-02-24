@@ -109,6 +109,33 @@ Returns everything a local LLM agent needs to synthesize meta-notes: cluster ass
 
 Intended workflow: fetch this payload with a local LLM agent, synthesize a meta-note per cluster, and submit each back via `POST /api/add-note`.
 
+### `GET /api/hypothesis-data`
+
+Returns everything a local LLM agent needs to generate research hypotheses: each tension pair with full note content for both notes, plus full content for all sibling notes in the same cluster. Requires current clusters and tensions indexes (run cluster-pass and tension-pass first).
+
+```json
+{
+  "tensions": [
+    {
+      "id": "tension-0",
+      "noteA": "20260101T000000-aaaaaaaa",
+      "noteB": "20260101T000001-bbbbbbbb",
+      "similarity": 0.62,
+      "clusterId": "cluster-0",
+      "noteAContent": { "title": "Agents and autonomy", "body": "..." },
+      "noteBContent": { "title": "Controlled systems", "body": "..." },
+      "clusterNotes": {
+        "20260101T000002-cccccccc": { "title": "Hybrid approaches", "body": "..." }
+      }
+    }
+  ],
+  "tensionCount": 1,
+  "computedAt": "2026-01-01T00:00:00Z"
+}
+```
+
+Intended workflow: fetch this payload with a local LLM agent, generate a hypothesis note per tension (with a statement, open questions, and cluster combination suggestions), and submit each back via `POST /api/add-note` with `"type": "hypothesis"`.
+
 ### `GET /api/health`
 
 Health check. Returns `{ "ok": true }`.
