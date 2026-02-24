@@ -57,6 +57,20 @@ export function getSlipBoxApiKey(): string {
   return _slipboxApiKey.value;
 }
 
+const _slipboxUiPassword = lazyRequired("SLIPBOX_UI_PASSWORD");
+
+/** Password for the browser-based graph UI (validated on first access). */
+export function getSlipBoxUiPassword(): string {
+  return _slipboxUiPassword.value;
+}
+
+const _sessionSecret = lazyRequired("SESSION_SECRET");
+
+/** Secret used to sign browser session tokens (validated on first access). */
+export function getSessionSecret(): string {
+  return _sessionSecret.value;
+}
+
 // ---------------------------------------------------------------------------
 // Embedding
 // ---------------------------------------------------------------------------

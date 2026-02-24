@@ -47,6 +47,14 @@ Contains:
     snapshot          — POST: capture point-in-time graph snapshot; append to snapshots.json
     analytics         — GET: return snapshot history with deltas; supports ?since=ISO-DATE
     exploration-pass  — POST: detect structural gaps; commit explorations.json
+    auth/login        — POST: validate SLIPBOX_UI_PASSWORD; set httpOnly session cookie
+    auth/logout       — POST: clear session cookie
+    graph/note        — GET: return parsed note content by ID (session-authed; browser-facing)
+  /graph
+    page.tsx          — Server Component: fetches all indexes + note titles; passes data to GraphCanvas
+    GraphCanvas.tsx   — Client Component: force-directed graph, filters, sidebar, sign-out
+    login/page.tsx    — Password form for browser session login
+    types.ts          — GraphNode, GraphLink, GraphData types
 
 /src
   auth.ts
@@ -59,9 +67,12 @@ Contains:
   graph.ts
   note.ts
   relation.ts
+  session.ts
   similarity.ts
   snapshot.ts
   tension.ts
+
+middleware.ts          — Edge Runtime; protects /graph/* with session cookie check
 
 /types
   cluster.ts
@@ -266,6 +277,45 @@ Output: `{ "suggestionCount", "byType", "suggestions" }`
 
 ---
 
+## POST /api/auth/login
+
+Input: `{ "password": "..." }`
+
+Validates against `SLIPBOX_UI_PASSWORD`. On success sets an `httpOnly` session cookie
+signed with `SESSION_SECRET`. Used only by the browser login form.
+
+---
+
+## POST /api/auth/logout
+
+Clears the session cookie. Always navigates the browser to `/graph/login`.
+
+---
+
+## GET /api/graph/note
+
+Query: `?id=<noteId>`
+
+Session-cookie authenticated (browser-facing). Returns parsed note content for the
+sidebar in the graph UI. Validates the note ID format before fetching from PrivateBox.
+Output: `{ "title"?, "type"?, "body" }`
+
+---
+
+## GET /graph
+
+Auth-gated browser page. Server Component: fetches all indexes and note titles
+server-side, passes assembled graph data to the `GraphCanvas` client component.
+Credentials never reach the browser.
+
+Force-directed graph with:
+- Node size = link count; color = cluster; gray tint = decay score
+- Edge color = relation type; dashed = tension (toggleable)
+- Filters: by cluster, meta-notes, tensions
+- Click node → sidebar with title, cluster, body preview, decay info, refinement suggestions
+
+---
+
 # 5. Embedding Strategy
 
 Default:
@@ -324,6 +374,16 @@ GitHub acts as:
 - All API tokens stored in environment variables.
 - No persistent database required for V1.
 
+**Machine API authentication** (`SLIPBOX_API_KEY`):
+Bearer token checked on all `/api/*` endpoints except `/api/auth/*` and `/api/graph/*`.
+Used by ChatGPT actions, GitHub Actions nightly workflow, and local LLM agents.
+
+**Browser UI authentication** (`SLIPBOX_UI_PASSWORD` + `SESSION_SECRET`):
+Password form at `/graph/login`. On success, an HMAC-SHA-256 session token is set as an
+`httpOnly`, `Secure`, `SameSite=Strict` cookie (30-day expiry). Middleware verifies the
+cookie for all `/graph/*` routes. The `SLIPBOX_API_KEY` is never exposed to the browser —
+the graph page fetches data server-side and passes it down as props.
+
 Optional future:
 - Encrypted local-only mode
 - Self-hosted mode
@@ -343,10 +403,10 @@ Phase 3 (complete):
 Nightly scheduled passes (GitHub Actions).
 GET /api/theme-data for LLM-driven meta-note synthesis.
 
-Phase 4 (in progress):
+Phase 4 (complete):
 Typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions,
-evolution timeline (snapshot + analytics), structural gap detection, and nightly Phase 4 automation —
-complete through Priority 25. Remaining: graph explorer UI.
+evolution timeline (snapshot + analytics), structural gap detection, nightly Phase 4 automation,
+and interactive graph explorer UI with server-side session authentication.
 
 ---
 

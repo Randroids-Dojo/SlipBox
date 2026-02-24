@@ -6,9 +6,9 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-25 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass, snapshot module + analytics endpoint, exploration pass, nightly Phase 4 passes). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions, evolution timeline, and structural gap detection pipeline is implemented. 298 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-26 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass, snapshot module + analytics endpoint, exploration pass, nightly Phase 4 passes, graph explorer UI + session auth). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions, evolution timeline, structural gap detection, and interactive graph visualization pipeline is implemented. 315 unit and integration tests pass.
 
-**Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
+**Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is complete.**
 
 ---
 
@@ -440,19 +440,25 @@ Extend the nightly GitHub Actions workflow to include Phase 4 passes.
 
 ---
 
-## Priority 26 — Graph Explorer UI
+## Priority 26 — Graph Explorer UI ✓
 
 Interactive visualization of the knowledge graph — the only Phase 4 frontend work.
 
-- [ ] `app/graph/page.tsx` — auth-gated route
-- [ ] `app/graph/GraphCanvas.tsx` — force-directed graph component
-- [ ] One new dependency: `react-force-graph-2d` (only external dep added in Phase 4)
-- [ ] Node encoding: size = link count, gray tint intensity = decay score
-- [ ] Edge encoding: color = relation type (green = supports, red = contradicts, blue = refines, yellow = contrasts-with, gray = unclassified)
-- [ ] Tension edges rendered as dashed lines (toggleable)
-- [ ] Click a node → sidebar: note title, cluster, decay reasons, refinement suggestions
-- [ ] Filter controls: by cluster, toggle meta-notes, toggle tensions
-- [ ] Data from existing endpoints: `/api/link-data`, `/api/theme-data`, `/api/analytics`
+- [x] Session authentication: `src/session.ts` (HMAC-SHA-256 stateless tokens), `middleware.ts` (protects `/graph/*`), `app/api/auth/login/route.ts`, `app/api/auth/logout/route.ts`
+- [x] `SLIPBOX_UI_PASSWORD` and `SESSION_SECRET` environment variables; cookie is `httpOnly`, `Secure`, `SameSite=Strict`
+- [x] `app/graph/login/page.tsx` — password form; redirects away if already authenticated
+- [x] `app/graph/page.tsx` — Server Component; fetches all indexes + note titles server-side (credentials never reach the browser)
+- [x] `app/graph/GraphCanvas.tsx` — force-directed graph component (`react-force-graph-2d`, SSR-disabled)
+- [x] `app/graph/types.ts` — `GraphNode`, `GraphLink`, `GraphData` types
+- [x] `app/api/graph/note/route.ts` — session-authed endpoint for lazy note content fetch on node click
+- [x] One new dependency: `react-force-graph-2d` (only external dep added in Phase 4)
+- [x] Node encoding: size = link count, color = cluster, gray tint intensity = decay score
+- [x] Edge encoding: color = relation type (green = supports, red = contradicts, blue = refines, purple = is-example-of, yellow = contrasts-with, gray = unclassified)
+- [x] Tension edges rendered as dashed lines (toggleable)
+- [x] Click a node → sidebar: note title, cluster badge, body preview, decay score + reasons, refinement suggestions
+- [x] Filter controls: by cluster, toggle meta-notes, toggle tensions; sidebar clears on filter change
+- [x] Sign-out button; legend in toolbar
+- [x] Data fetched server-side from indexes directly (no self-calling API routes)
 
 **Done when:** Graph loads, renders typed edges with color coding, node sidebar shows note metadata.
 
