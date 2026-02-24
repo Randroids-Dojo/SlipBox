@@ -8,7 +8,7 @@ import type { RelationType } from "@/types/relation";
 // ForceGraph2D accesses window at module load — must be client-only.
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
-  loading: () => <p style={{ padding: 16 }}>Loading graph…</p>,
+  loading: () => <p style={{ padding: 16, background: "#0f172a", color: "#e2e8f0", margin: 0, height: "100%" }}>Loading graph…</p>,
 });
 
 // ---------------------------------------------------------------------------
@@ -36,8 +36,19 @@ const RELATION_COLORS: Record<RelationType, string> = {
   "contrasts-with": "#eab308",
 };
 
-const UNCLASSIFIED_EDGE_COLOR = "#cbd5e1";
-const GRAY = "#9ca3af";
+const UNCLASSIFIED_EDGE_COLOR = "#475569";
+const GRAY = "#6b7280";
+
+const DARK = {
+  bg: "#0f172a",
+  toolbar: "#1e293b",
+  border: "#334155",
+  sidebar: "#1e293b",
+  text: "#e2e8f0",
+  muted: "#64748b",
+  faint: "#94a3b8",
+  suggestion: "#0f172a",
+};
 
 function lerpColor(hex1: string, hex2: string, t: number): string {
   const parse = (h: string) => [
@@ -191,7 +202,7 @@ export default function GraphCanvas({ data }: Props) {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: DARK.bg, color: DARK.text }}>
       {/* Toolbar */}
       <div
         style={{
@@ -199,20 +210,20 @@ export default function GraphCanvas({ data }: Props) {
           display: "flex",
           gap: "16px",
           alignItems: "center",
-          borderBottom: "1px solid #e5e7eb",
-          background: "#ffffff",
+          borderBottom: `1px solid ${DARK.border}`,
+          background: DARK.toolbar,
           flexShrink: 0,
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+        <span style={{ fontWeight: 600, fontSize: "0.95rem", color: DARK.text }}>
           SlipBox Graph
         </span>
 
         <select
           value={selectedClusterId ?? ""}
           onChange={(e) => setSelectedClusterId(e.target.value || null)}
-          style={{ fontSize: "0.85rem" }}
+          style={{ fontSize: "0.85rem", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: "2px 4px" }}
         >
           <option value="">All clusters</option>
           {clusterIds.map((id) => (
@@ -222,7 +233,7 @@ export default function GraphCanvas({ data }: Props) {
           ))}
         </select>
 
-        <label style={{ fontSize: "0.85rem", display: "flex", gap: 4 }}>
+        <label style={{ fontSize: "0.85rem", display: "flex", gap: 4, color: DARK.text }}>
           <input
             type="checkbox"
             checked={showMetaNotes}
@@ -231,7 +242,7 @@ export default function GraphCanvas({ data }: Props) {
           Meta notes
         </label>
 
-        <label style={{ fontSize: "0.85rem", display: "flex", gap: 4 }}>
+        <label style={{ fontSize: "0.85rem", display: "flex", gap: 4, color: DARK.text }}>
           <input
             type="checkbox"
             checked={showTensions}
@@ -251,7 +262,7 @@ export default function GraphCanvas({ data }: Props) {
         >
           {(Object.entries(RELATION_COLORS) as [RelationType, string][]).map(
             ([type, color]) => (
-              <span key={type} style={{ display: "flex", gap: 4 }}>
+              <span key={type} style={{ display: "flex", gap: 4, color: DARK.text }}>
                 <span
                   style={{
                     width: 12,
@@ -270,7 +281,7 @@ export default function GraphCanvas({ data }: Props) {
 
         <button
           onClick={handleSignOut}
-          style={{ marginLeft: "auto", fontSize: "0.85rem" }}
+          style={{ marginLeft: "auto", fontSize: "0.85rem", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer" }}
         >
           Sign out
         </button>
@@ -289,7 +300,7 @@ export default function GraphCanvas({ data }: Props) {
             linkColor={getLinkColor}
             linkLineDash={getLinkDash}
             linkWidth={1.5}
-            backgroundColor="#f8fafc"
+            backgroundColor={DARK.bg}
             onNodeClick={handleNodeClick}
           />
         </div>
@@ -325,14 +336,15 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
     <div
       style={{
         width: 320,
-        borderLeft: "1px solid #e5e7eb",
+        borderLeft: `1px solid ${DARK.border}`,
         padding: 16,
         overflowY: "auto",
         flexShrink: 0,
-        background: "#ffffff",
+        background: DARK.sidebar,
         display: "flex",
         flexDirection: "column",
         gap: 12,
+        color: DARK.text,
       }}
     >
       {/* Header */}
@@ -347,11 +359,11 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
           <div style={{ fontWeight: 600, fontSize: "0.95rem", wordBreak: "break-word" }}>
             {node.title !== node.id ? node.title : "Untitled"}
           </div>
-          <div style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: 2 }}>
+          <div style={{ fontSize: "0.7rem", color: DARK.muted, marginTop: 2 }}>
             {node.id}
           </div>
         </div>
-        <button onClick={onClose} style={{ fontSize: "1.1rem", lineHeight: 1, padding: "0 4px" }}>
+        <button onClick={onClose} style={{ fontSize: "1.1rem", lineHeight: 1, padding: "0 4px", background: "transparent", color: DARK.faint, border: "none", cursor: "pointer" }}>
           ×
         </button>
       </div>
@@ -359,7 +371,7 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
       {/* Cluster */}
       {node.clusterId && (
         <div style={{ fontSize: "0.8rem" }}>
-          <span style={{ color: "#6b7280" }}>Cluster </span>
+          <span style={{ color: DARK.muted }}>Cluster </span>
           <span
             style={{
               background: clusterColorMap[node.clusterId] ?? GRAY,
@@ -376,12 +388,12 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
 
       {/* Note body */}
       {loading ? (
-        <p style={{ fontSize: "0.8rem", color: "#9ca3af" }}>Loading…</p>
+        <p style={{ fontSize: "0.8rem", color: DARK.muted }}>Loading…</p>
       ) : detail ? (
         <p
           style={{
             fontSize: "0.8rem",
-            color: "#374151",
+            color: DARK.text,
             whiteSpace: "pre-wrap",
             margin: 0,
             lineHeight: 1.5,
@@ -396,10 +408,10 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
       {/* Decay */}
       {node.decayScore > 0 && (
         <div style={{ fontSize: "0.8rem" }}>
-          <div style={{ fontWeight: 600, color: "#b45309" }}>
+          <div style={{ fontWeight: 600, color: "#fbbf24" }}>
             Decay: {node.decayScore.toFixed(2)}
           </div>
-          <ul style={{ margin: "4px 0 0", paddingLeft: 16, color: "#92400e" }}>
+          <ul style={{ margin: "4px 0 0", paddingLeft: 16, color: "#fcd34d" }}>
             {node.decayReasons.map((r) => (
               <li key={r}>{r}</li>
             ))}
@@ -415,7 +427,8 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
             <div
               key={r.id}
               style={{
-                background: "#f1f5f9",
+                background: DARK.suggestion,
+                border: `1px solid ${DARK.border}`,
                 padding: "6px 8px",
                 borderRadius: 4,
                 marginBottom: 6,
@@ -424,7 +437,7 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
               <div>
                 <strong>{r.type}:</strong> {r.suggestion}
               </div>
-              <div style={{ color: "#6b7280", marginTop: 2 }}>{r.reason}</div>
+              <div style={{ color: DARK.muted, marginTop: 2 }}>{r.reason}</div>
             </div>
           ))}
         </div>
