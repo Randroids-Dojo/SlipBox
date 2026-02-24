@@ -239,3 +239,22 @@ export const DECAY_SCORE_THRESHOLD = optionalNumericEnv(
   "DECAY_SCORE_THRESHOLD",
   0.3,
 );
+
+// ---------------------------------------------------------------------------
+// Exploration (structural gap detection)
+// ---------------------------------------------------------------------------
+
+/** Path to the explorations index file. */
+export const EXPLORATIONS_INDEX_PATH = optionalEnv(
+  "EXPLORATIONS_INDEX_PATH",
+  "index/explorations.json",
+);
+
+/**
+ * Minimum cosine similarity between two cluster centroids for them to be
+ * flagged as a `close-clusters` merge candidate.
+ */
+export const CLOSE_CLUSTER_THRESHOLD = optionalNumericEnv(
+  "CLOSE_CLUSTER_THRESHOLD",
+  0.85,
+);

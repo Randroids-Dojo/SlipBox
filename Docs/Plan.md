@@ -44,6 +44,9 @@ Contains:
     hypothesis-data   — GET: fetch tension/cluster data for LLM hypothesis generation
     refinement-data   — GET: fetch cluster/decay data for LLM refinement analysis
     refinements       — POST: persist advisory refinement suggestions from LLM agent
+    snapshot          — POST: capture point-in-time graph snapshot; append to snapshots.json
+    analytics         — GET: return snapshot history with deltas; supports ?since=ISO-DATE
+    exploration-pass  — POST: detect structural gaps; commit explorations.json
 
 /src
   auth.ts
@@ -51,21 +54,25 @@ Contains:
   config.ts
   decay.ts
   embeddings.ts
+  exploration.ts
   github.ts
   graph.ts
   note.ts
   relation.ts
   similarity.ts
+  snapshot.ts
   tension.ts
 
 /types
   cluster.ts
   decay.ts
   embedding.ts
+  exploration.ts
   graph.ts
   note.ts
   refinement.ts
   relation.ts
+  snapshot.ts
   tension.ts
 
 /.github/workflows
@@ -97,6 +104,9 @@ Contains:
   tensions.json
   relations.json
   decay.json
+  refinements.json
+  explorations.json
+  snapshots.json
 
 This repository:
 - Stores atomic markdown notes
@@ -106,6 +116,9 @@ This repository:
 - Stores tension records
 - Stores typed semantic relations
 - Stores staleness scores
+- Stores advisory refinement suggestions
+- Stores structural gap detections
+- Stores append-only graph evolution timeline
 
 It contains no engine logic.
 
@@ -219,6 +232,40 @@ Output: `{ "updated", "total" }`
 
 ---
 
+## POST /api/decay-pass
+
+Scores every note for staleness using four pure-math signals: no links, low link density,
+cluster outlier, and no cluster. No LLM calls. Commits decay.json.
+Output: `{ "noteCount", "staleCount", "records" }`
+
+---
+
+## POST /api/snapshot
+
+Captures a point-in-time graph snapshot (counts, cluster sizes, avg links per note).
+Appends to the append-only snapshots.json.
+Output: the new `GraphSnapshot` record.
+
+---
+
+## GET /api/analytics
+
+Returns the full snapshots history. Supports `?since=ISO-DATE` to filter.
+Includes computed deltas between consecutive snapshots.
+Output: `{ "snapshots", "snapshotCount", "since"? }`
+
+---
+
+## POST /api/exploration-pass
+
+Detects four structural gap types — orphan notes (zero backlinks), close cluster pairs
+(centroid similarity above threshold), structural holes (clusters with no external typed
+relations), and meta-note-missing (clusters with no meta-typed member note).
+No LLM calls. Commits explorations.json.
+Output: `{ "suggestionCount", "byType", "suggestions" }`
+
+---
+
 # 5. Embedding Strategy
 
 Default:
@@ -297,8 +344,9 @@ Nightly scheduled passes (GitHub Actions).
 GET /api/theme-data for LLM-driven meta-note synthesis.
 
 Phase 4 (in progress):
-Typed semantic edges, staleness detection, hypothesis context, and advisory refinement suggestions — complete through Priority 22.
-Remaining: snapshot timeline, exploration pass, nightly Phase 4 automation, graph UI.
+Typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions,
+evolution timeline (snapshot + analytics), and structural gap detection — complete through Priority 24.
+Remaining: nightly Phase 4 automation, graph explorer UI.
 
 ---
 

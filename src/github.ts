@@ -11,6 +11,7 @@ import {
   type ClustersIndex,
   type DecayIndex,
   type EmbeddingsIndex,
+  type ExplorationsIndex,
   type NoteEmbedding,
   type NoteId,
   type RefinementsIndex,
@@ -21,6 +22,7 @@ import {
   emptyClustersIndex,
   emptyDecayIndex,
   emptyEmbeddingsIndex,
+  emptyExplorationsIndex,
   emptyRefinementsIndex,
   emptyRelationsIndex,
   emptySnapshotsIndex,
@@ -31,6 +33,7 @@ import {
   CLUSTERS_INDEX_PATH,
   DECAY_INDEX_PATH,
   EMBEDDINGS_INDEX_PATH,
+  EXPLORATIONS_INDEX_PATH,
   REFINEMENTS_INDEX_PATH,
   RELATIONS_INDEX_PATH,
   SNAPSHOTS_INDEX_PATH,
@@ -529,6 +532,37 @@ export async function writeSnapshotsIndex(
 ): Promise<string> {
   return writeFile({
     path: SNAPSHOTS_INDEX_PATH,
+    content: JSON.stringify(index, null, 2) + "\n",
+    message,
+    sha: sha ?? undefined,
+  });
+}
+
+/**
+ * Read the explorations index from PrivateBox.
+ * Returns an empty index if the file does not yet exist.
+ */
+export async function readExplorationsIndex(): Promise<{
+  index: ExplorationsIndex;
+  sha: string | null;
+}> {
+  const file = await readFile(EXPLORATIONS_INDEX_PATH);
+  if (!file) {
+    return { index: emptyExplorationsIndex(), sha: null };
+  }
+  return { index: JSON.parse(file.content) as ExplorationsIndex, sha: file.sha };
+}
+
+/**
+ * Write the explorations index to PrivateBox.
+ */
+export async function writeExplorationsIndex(
+  index: ExplorationsIndex,
+  sha: string | null,
+  message: string = "Update explorations index",
+): Promise<string> {
+  return writeFile({
+    path: EXPLORATIONS_INDEX_PATH,
     content: JSON.stringify(index, null, 2) + "\n",
     message,
     sha: sha ?? undefined,

@@ -35,3 +35,10 @@ export { REFINEMENT_TYPES, emptyRefinementsIndex } from "./refinement";
 
 export type { GraphSnapshot, SnapshotsIndex } from "./snapshot";
 export { emptySnapshotsIndex } from "./snapshot";
+
+export type {
+  ExplorationSuggestionType,
+  ExplorationSuggestion,
+  ExplorationsIndex,
+} from "./exploration";
+export { EXPLORATION_SUGGESTION_TYPES, emptyExplorationsIndex } from "./exploration";

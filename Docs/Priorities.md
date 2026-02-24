@@ -6,9 +6,7 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-22 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, hypothesis context, and advisory refinement suggestion pipeline is implemented. `GET /api/refinement-data` exposes clusters with note content and decay records for local LLM refinement analysis; suggestions are submitted back via `POST /api/refinements` and stored advisory-only in `index/refinements.json`. 236 unit and integration tests pass.
-
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-22 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass). 236 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-24 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass, snapshot module + analytics endpoint, exploration pass). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions, evolution timeline, and structural gap detection pipeline is implemented. 298 unit and integration tests pass.
 
 **Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
@@ -391,39 +389,39 @@ Advisory-only note improvement suggestions from a local LLM. No automatic edits.
 
 ---
 
-## Priority 23 — Snapshot Module + Graph Analytics
+## Priority 23 — Snapshot Module + Graph Analytics ✓
 
 Append-only evolution timeline — one snapshot per nightly run.
 
-- [ ] `types/snapshot.ts` — `GraphSnapshot`, `SnapshotsIndex` type definitions
-- [ ] `GraphSnapshot` — id, capturedAt, noteCount, linkCount, clusterCount, tensionCount, decayCount, clusterSizes (clusterId → noteCount), avgLinksPerNote
-- [ ] `SnapshotsIndex` — append-only array ordered by capturedAt
-- [ ] `src/snapshot.ts` — `captureSnapshot(embeddingsIndex, backlinksIndex, clustersIndex, tensionsIndex, decayIndex)` → `GraphSnapshot`
-- [ ] `app/api/snapshot/route.ts` — fetch all indexes → compute snapshot → append to `index/snapshots.json` → return new snapshot
-- [ ] `app/api/analytics/route.ts` — return full snapshots array; optional `?since=ISO-DATE` param; include computed deltas between consecutive snapshots
-- [ ] `readSnapshotsIndex()`, `writeSnapshotsIndex()` GitHub helpers
-- [ ] Unit tests (15+ via vitest) — snapshot computation, delta calculation; integration tests (3+)
+- [x] `types/snapshot.ts` — `GraphSnapshot`, `SnapshotsIndex` type definitions
+- [x] `GraphSnapshot` — id, capturedAt, noteCount, linkCount, clusterCount, tensionCount, decayCount, clusterSizes (clusterId → noteCount), avgLinksPerNote
+- [x] `SnapshotsIndex` — append-only array ordered by capturedAt
+- [x] `src/snapshot.ts` — `captureSnapshot(embeddingsIndex, backlinksIndex, clustersIndex, tensionsIndex, decayIndex)` → `GraphSnapshot`
+- [x] `app/api/snapshot/route.ts` — fetch all indexes → compute snapshot → append to `index/snapshots.json` → return new snapshot
+- [x] `app/api/analytics/route.ts` — return full snapshots array; optional `?since=ISO-DATE` param; include computed deltas between consecutive snapshots
+- [x] `readSnapshotsIndex()`, `writeSnapshotsIndex()` GitHub helpers
+- [x] Unit tests (15+ via vitest) — snapshot computation, delta calculation; integration tests (3+)
 
 **Done when:** Nightly runs accumulate a queryable daily timeline; analytics endpoint shows growth trajectory with deltas.
 
 ---
 
-## Priority 24 — Exploration Pass (pure math)
+## Priority 24 — Exploration Pass (pure math) ✓
 
 Structural gap detection — no LLM, no external dependencies.
 
-- [ ] `types/exploration.ts` — `ExplorationSuggestionType`, `ExplorationSuggestion`, `ExplorationsIndex` type definitions
-- [ ] `ExplorationSuggestionType`: `'orphan-note' | 'close-clusters' | 'structural-hole' | 'meta-note-missing'`
-- [ ] `src/exploration.ts` — `detectExplorations(embeddingsIndex, backlinksIndex, clustersIndex, relationsIndex, config)` → `ExplorationsIndex`
-- [ ] Detection logic:
+- [x] `types/exploration.ts` — `ExplorationSuggestionType`, `ExplorationSuggestion`, `ExplorationsIndex` type definitions
+- [x] `ExplorationSuggestionType`: `'orphan-note' | 'close-clusters' | 'structural-hole' | 'meta-note-missing'`
+- [x] `src/exploration.ts` — `detectExplorations(embeddingsIndex, backlinksIndex, clustersIndex, relationsIndex, config)` → `ExplorationsIndex`
+- [x] Detection logic:
   - **orphan-note:** notes in embeddings index with zero backlinks
   - **close-clusters:** cluster pairs with centroid cosine similarity > `CLOSE_CLUSTER_THRESHOLD` (default 0.85) — candidates for merge
   - **structural-hole:** clusters with no typed relations to any note outside the cluster
   - **meta-note-missing:** clusters where no member note has `type: meta` in frontmatter
-- [ ] Config tunables: `EXPLORATIONS_INDEX_PATH`, `CLOSE_CLUSTER_THRESHOLD`
-- [ ] `app/api/exploration-pass/route.ts` — fetch all indexes → run detection → commit `explorations.json` → return suggestion list
-- [ ] `readExplorationsIndex()`, `writeExplorationsIndex()` GitHub helpers
-- [ ] Unit tests (30+ via vitest) — each detection type; integration tests (4+)
+- [x] Config tunables: `EXPLORATIONS_INDEX_PATH`, `CLOSE_CLUSTER_THRESHOLD`
+- [x] `app/api/exploration-pass/route.ts` — fetch all indexes → run detection → commit `explorations.json` → return suggestion list
+- [x] `readExplorationsIndex()`, `writeExplorationsIndex()` GitHub helpers
+- [x] Unit tests (30 via vitest) — each detection type; integration tests (5)
 
 **Done when:** exploration-pass detects all four structural gap types and commits results.
 
