@@ -76,7 +76,7 @@ Contains:
   tension.ts
 
 /.github/workflows
-  nightly-passes.yml  — link-pass → cluster-pass → tension-pass at 3 AM UTC
+  nightly-passes.yml  — link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot at 3 AM UTC
 
 Docs/Plan.md
 Docs/Priorities.md
@@ -345,8 +345,8 @@ GET /api/theme-data for LLM-driven meta-note synthesis.
 
 Phase 4 (in progress):
 Typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions,
-evolution timeline (snapshot + analytics), and structural gap detection — complete through Priority 24.
-Remaining: nightly Phase 4 automation, graph explorer UI.
+evolution timeline (snapshot + analytics), structural gap detection, and nightly Phase 4 automation —
+complete through Priority 25. Remaining: graph explorer UI.
 
 ---
 

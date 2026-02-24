@@ -3,16 +3,42 @@ name: Nightly Passes
 on:
   schedule:
     - cron: '0 3 * * *' # 3 AM UTC daily
-  workflow_dispatch: # allow manual runs
+  workflow_dispatch:
+    inputs:
+      skip_link:
+        description: 'Skip link-pass'
+        type: boolean
+        default: false
+      skip_cluster:
+        description: 'Skip cluster-pass'
+        type: boolean
+        default: false
+      skip_tension:
+        description: 'Skip tension-pass'
+        type: boolean
+        default: false
+      skip_decay:
+        description: 'Skip decay-pass'
+        type: boolean
+        default: false
+      skip_exploration:
+        description: 'Skip exploration-pass'
+        type: boolean
+        default: false
+      skip_snapshot:
+        description: 'Skip snapshot'
+        type: boolean
+        default: false
 
 jobs:
   link-pass:
     name: Link Pass
     runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_link }}
     steps:
       - name: Run link-pass
         run: |
-          curl --fail --silent --show-error \
+          curl --fail-with-body --silent --show-error --max-time 60 \
             -X POST "${{ secrets.SLIPBOX_URL }}/api/link-pass" \
             -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
             -H "Content-Type: application/json"
@@ -21,10 +47,11 @@ jobs:
     name: Cluster Pass
     runs-on: ubuntu-latest
     needs: link-pass
+    if: ${{ !failure() && !inputs.skip_cluster }}
     steps:
       - name: Run cluster-pass
         run: |
-          curl --fail --silent --show-error \
+          curl --fail-with-body --silent --show-error --max-time 60 \
             -X POST "${{ secrets.SLIPBOX_URL }}/api/cluster-pass" \
             -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
             -H "Content-Type: application/json"
@@ -33,10 +60,50 @@ jobs:
     name: Tension Pass
     runs-on: ubuntu-latest
     needs: cluster-pass
+    if: ${{ !failure() && !inputs.skip_tension }}
     steps:
       - name: Run tension-pass
         run: |
-          curl --fail --silent --show-error \
+          curl --fail-with-body --silent --show-error --max-time 60 \
             -X POST "${{ secrets.SLIPBOX_URL }}/api/tension-pass" \
+            -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
+            -H "Content-Type: application/json"
+
+  decay-pass:
+    name: Decay Pass
+    runs-on: ubuntu-latest
+    needs: tension-pass
+    if: ${{ !failure() && !inputs.skip_decay }}
+    steps:
+      - name: Run decay-pass
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -X POST "${{ secrets.SLIPBOX_URL }}/api/decay-pass" \
+            -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
+            -H "Content-Type: application/json"
+
+  exploration-pass:
+    name: Exploration Pass
+    runs-on: ubuntu-latest
+    needs: tension-pass
+    if: ${{ !failure() && !inputs.skip_exploration }}
+    steps:
+      - name: Run exploration-pass
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -X POST "${{ secrets.SLIPBOX_URL }}/api/exploration-pass" \
+            -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
+            -H "Content-Type: application/json"
+
+  snapshot:
+    name: Snapshot
+    runs-on: ubuntu-latest
+    needs: [decay-pass, exploration-pass]
+    if: ${{ !failure() && !inputs.skip_snapshot }}
+    steps:
+      - name: Run snapshot
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -X POST "${{ secrets.SLIPBOX_URL }}/api/snapshot" \
             -H "Authorization: Bearer ${{ secrets.SLIPBOX_API_KEY }}" \
             -H "Content-Type: application/json"

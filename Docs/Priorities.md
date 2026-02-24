@@ -6,7 +6,7 @@ Implementation roadmap for SlipBox.
 
 ## Current Status
 
-**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-24 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass, snapshot module + analytics endpoint, exploration pass). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions, evolution timeline, and structural gap detection pipeline is implemented. 298 unit and integration tests pass.
+**Completed:** All Phase 1 priorities (1-10) plus API authentication, Phase 2 Priorities 11-14 (cluster module, cluster-pass, tension module, tension-pass), Phase 3 Priorities 15-16 (nightly scheduled passes, GET /api/theme-data), and Phase 4 Priorities 17-25 (relation types + RelationsIndex, GET /api/link-data, POST /api/relations, decay module + decay-pass, GET /api/hypothesis-data, refinement pass, snapshot module + analytics endpoint, exploration pass, nightly Phase 4 passes). The full note ingestion, auto-linking, semantic clustering, tension detection, nightly automation, typed semantic edges, staleness detection, hypothesis context, advisory refinement suggestions, evolution timeline, and structural gap detection pipeline is implemented. 298 unit and integration tests pass.
 
 **Phase 1 is complete. Phase 2 is complete. Phase 3 is complete. Phase 4 is in progress.**
 
@@ -427,14 +427,14 @@ Structural gap detection — no LLM, no external dependencies.
 
 ---
 
-## Priority 25 — Nightly Phase 4 Passes
+## Priority 25 — Nightly Phase 4 Passes ✓
 
 Extend the nightly GitHub Actions workflow to include Phase 4 passes.
 
-- [ ] `.github/workflows/nightly-passes.yml` — extend job chain: `link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot`
-- [ ] `decay-pass` and `exploration-pass` run in parallel (both depend on tension-pass, neither depends on the other)
-- [ ] `snapshot` runs last after all indexes are fresh
-- [ ] `workflow_dispatch` input to skip individual passes (for debugging)
+- [x] `.github/workflows/nightly-passes.yml` — extend job chain: `link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot`
+- [x] `decay-pass` and `exploration-pass` run in parallel (both depend on tension-pass, neither depends on the other)
+- [x] `snapshot` runs last after all indexes are fresh
+- [x] `workflow_dispatch` inputs to skip individual passes (for debugging)
 
 **Done when:** All Phase 4 passes run automatically each night; snapshots accumulate a daily timeline.
 
