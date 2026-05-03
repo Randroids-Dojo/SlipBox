@@ -8,8 +8,9 @@
 
 import { NextResponse } from "next/server";
 import { withAuth } from "@/src/auth";
-import { findMatches } from "@/src/similarity";
+import { cosineSimilarity } from "@/src/similarity";
 import { rebuildBacklinks } from "@/src/graph";
+import { SIMILARITY_THRESHOLD } from "@/src/config";
 import {
   readEmbeddingsIndex,
   readBacklinksIndex,
@@ -32,32 +33,21 @@ export const POST = withAuth(async () => {
     });
   }
 
-  // 2. Compute full similarity matrix
+  // 2. Compute the upper-triangle of the similarity matrix.
+  //    Each pair's dot product is computed once instead of twice, halving the
+  //    work versus calling findMatches per note.
   const linkPairs: { noteA: string; noteB: string; similarity: number }[] = [];
-  const seen = new Set<string>();
 
-  for (const noteId of noteIds) {
-    const embedding = embResult.index.embeddings[noteId];
-    const matches = findMatches(
-      embedding.vector,
-      embResult.index,
-      undefined, // use default threshold
-      new Set([noteId]),
-    );
-
-    for (const match of matches) {
-      // Avoid duplicate pairs (A-B and B-A)
-      const pairKey =
-        noteId < match.noteId
-          ? `${noteId}:${match.noteId}`
-          : `${match.noteId}:${noteId}`;
-
-      if (!seen.has(pairKey)) {
-        seen.add(pairKey);
+  for (let i = 0; i < noteIds.length; i++) {
+    const a = embResult.index.embeddings[noteIds[i]];
+    for (let j = i + 1; j < noteIds.length; j++) {
+      const b = embResult.index.embeddings[noteIds[j]];
+      const similarity = cosineSimilarity(a.vector, b.vector);
+      if (similarity >= SIMILARITY_THRESHOLD) {
         linkPairs.push({
-          noteA: noteId,
-          noteB: match.noteId,
-          similarity: match.similarity,
+          noteA: noteIds[i],
+          noteB: noteIds[j],
+          similarity,
         });
       }
     }

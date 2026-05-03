@@ -172,7 +172,7 @@ describe("readFile", () => {
       .mockResolvedValueOnce(fakeErrorResponse(500, "Blob read error"));
 
     await expect(readFile("index/embeddings.json")).rejects.toThrow(
-      "GitHub blob read failed for index/embeddings.json sha=blob-sha-2 (500): Blob read error",
+      "GitHub blob read failed for index/embeddings.json (sha=blob-sha-2, 500): Blob read error",
     );
   });
 
@@ -185,7 +185,7 @@ describe("readFile", () => {
     } as unknown as Response);
 
     await expect(readFile("notes/test.md")).rejects.toThrow(
-      "Unexpected encoding for notes/test.md: utf-7",
+      "Unexpected contents encoding for notes/test.md: utf-7",
     );
   });
 });

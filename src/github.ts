@@ -147,8 +147,7 @@ export async function readFile(path: string): Promise<GitHubFile | null> {
   };
 
   if (json.encoding === "base64") {
-    const content = Buffer.from(json.content, "base64").toString("utf-8");
-    return { content, sha: json.sha };
+    return decodeBase64Blob(json);
   }
 
   // For files larger than ~1 MB the Contents API returns `encoding: "none"`
@@ -158,7 +157,15 @@ export async function readFile(path: string): Promise<GitHubFile | null> {
     return await readBlobBySha(path, json.sha);
   }
 
-  throw new Error(`Unexpected encoding for ${path}: ${json.encoding}`);
+  throw new Error(
+    `Unexpected contents encoding for ${path}: ${json.encoding}`,
+  );
+}
+
+/** Decode a base64-encoded `{ content, sha }` payload from a GitHub API response. */
+function decodeBase64Blob(json: { content: string; sha: string }): GitHubFile {
+  const content = Buffer.from(json.content, "base64").toString("utf-8");
+  return { content, sha: json.sha };
 }
 
 /**
@@ -176,7 +183,7 @@ async function readBlobBySha(path: string, sha: string): Promise<GitHubFile> {
   if (!response.ok) {
     const body = await response.text();
     throw new Error(
-      `GitHub blob read failed for ${path} sha=${sha} (${response.status}): ${body}`,
+      `GitHub blob read failed for ${path} (sha=${sha}, ${response.status}): ${body}`,
     );
   }
 
@@ -188,12 +195,11 @@ async function readBlobBySha(path: string, sha: string): Promise<GitHubFile> {
 
   if (json.encoding !== "base64") {
     throw new Error(
-      `Unexpected blob encoding for ${path} sha=${sha}: ${json.encoding}`,
+      `Unexpected blob encoding for ${path} (sha=${sha}): ${json.encoding}`,
     );
   }
 
-  const content = Buffer.from(json.content, "base64").toString("utf-8");
-  return { content, sha: json.sha };
+  return decodeBase64Blob(json);
 }
 
 // ---------------------------------------------------------------------------

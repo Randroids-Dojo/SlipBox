@@ -48,35 +48,29 @@ export const POST = withAuth(async (request: NextRequest) => {
     metadata: noteType ? { type: noteType } : undefined,
   });
 
-  // 2. Generate embedding
+  // 2. Embed the new note and fetch the embeddings index in parallel.
+  //    Both are reads with no mutation, so there is no commit-race risk.
   const provider = createOpenAIProvider();
-  const embedding = await embedNote(note.id, note.content, provider);
+  const [embedding, embResult] = await Promise.all([
+    embedNote(note.id, note.content, provider),
+    readEmbeddingsIndex(),
+  ]);
 
-  // 3. Fetch embeddings index for the similarity pass
-  const embResult = await readEmbeddingsIndex();
-
-  // 4. Similarity pass — find matches above threshold
+  // 3. Similarity pass: find matches above threshold and attach as links.
   const matches = findMatches(
     embedding.vector,
     embResult.index,
-    undefined, // use default threshold from config
+    undefined,
     new Set([note.id]),
   );
   const links: NoteLink[] = matchesToLinks(matches);
-
-  // 5. Attach links to the note
   note.links = links;
 
-  // 6. Commit note file, then backlinks index, then embeddings.
-  //
-  //    Earlier this used Promise.all([writeFile, updateJsonFileWithRetry]) for
-  //    parallelism, but GitHub serializes commits to a single branch and returns
-  //    409 to the loser of the race. writeFile has no retry, so the note write
-  //    occasionally lost and propagated GitHubConflictError to the caller while
-  //    the backlinks update silently retried and succeeded. Serializing the
-  //    three writes adds ~500ms to the request but eliminates the in-request
-  //    race entirely. Multi-request races (two concurrent /api/add-note calls)
-  //    are still handled by updateJsonFileWithRetry on the index files.
+  // 4. Serialize commits to one branch. GitHub returns 409 to the loser of any
+  //    concurrent commits, and writeFile has no retry, so parallelism here
+  //    occasionally surfaced GitHubConflictError on the note write. Cross-
+  //    request races on the shared index files are still handled by
+  //    updateJsonFileWithRetry.
   const serialized = serializeNote(note);
   const path = noteFilePath(note.id, NOTES_DIR);
 
