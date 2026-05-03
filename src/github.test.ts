@@ -51,6 +51,30 @@ function fakeContentsResponse(content: string, sha: string = "abc123sha") {
   } as unknown as Response;
 }
 
+/**
+ * Mimics the Contents API response for files larger than ~1 MB: empty
+ * `content` and `encoding: "none"`. Callers must fall through to the
+ * Git Blobs API using the returned SHA.
+ */
+function fakeLargeFileContentsResponse(sha: string = "largesha") {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ content: "", sha, encoding: "none" }),
+    text: async () => "",
+  } as unknown as Response;
+}
+
+function fakeBlobsResponse(content: string, sha: string = "largesha") {
+  const encoded = Buffer.from(content, "utf-8").toString("base64");
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ content: encoded, sha, encoding: "base64" }),
+    text: async () => "",
+  } as unknown as Response;
+}
+
 function fake404Response() {
   return {
     ok: false,
@@ -115,6 +139,53 @@ describe("readFile", () => {
 
     await expect(readFile("notes/test.md")).rejects.toThrow(
       "GitHub read failed for notes/test.md (500): Server Error",
+    );
+  });
+
+  it("falls through to the Git Blobs API when Contents returns encoding: none (large file)", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(fakeLargeFileContentsResponse("blob-sha-1"))
+      .mockResolvedValueOnce(
+        fakeBlobsResponse('{"big": "payload"}', "blob-sha-1"),
+      );
+
+    const result = await readFile("index/embeddings.json");
+
+    expect(result).not.toBeNull();
+    expect(result!.content).toBe('{"big": "payload"}');
+    expect(result!.sha).toBe("blob-sha-1");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const [contentsUrl] = fetchSpy.mock.calls[0] as [string];
+    const [blobsUrl] = fetchSpy.mock.calls[1] as [string];
+    expect(contentsUrl).toBe(
+      "https://api.github.com/repos/test-owner/test-repo/contents/index/embeddings.json",
+    );
+    expect(blobsUrl).toBe(
+      "https://api.github.com/repos/test-owner/test-repo/git/blobs/blob-sha-1",
+    );
+  });
+
+  it("throws when the blob fallback itself fails", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(fakeLargeFileContentsResponse("blob-sha-2"))
+      .mockResolvedValueOnce(fakeErrorResponse(500, "Blob read error"));
+
+    await expect(readFile("index/embeddings.json")).rejects.toThrow(
+      "GitHub blob read failed for index/embeddings.json sha=blob-sha-2 (500): Blob read error",
+    );
+  });
+
+  it("throws on unexpected encoding values", async () => {
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ content: "", sha: "x", encoding: "utf-7" }),
+      text: async () => "",
+    } as unknown as Response);
+
+    await expect(readFile("notes/test.md")).rejects.toThrow(
+      "Unexpected encoding for notes/test.md: utf-7",
     );
   });
 });

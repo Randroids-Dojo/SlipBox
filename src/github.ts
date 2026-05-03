@@ -96,6 +96,13 @@ function contentsUrl(path: string): string {
   return `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${path}`;
 }
 
+/** Build the Git Blobs API URL for a given blob SHA. */
+function blobsUrl(sha: string): string {
+  const owner = getPrivateBoxOwner();
+  const repo = getPrivateBoxRepo();
+  return `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/blobs/${sha}`;
+}
+
 /** Common headers for GitHub API requests. */
 function headers(): Record<string, string> {
   return {
@@ -139,8 +146,50 @@ export async function readFile(path: string): Promise<GitHubFile | null> {
     encoding: string;
   };
 
+  if (json.encoding === "base64") {
+    const content = Buffer.from(json.content, "base64").toString("utf-8");
+    return { content, sha: json.sha };
+  }
+
+  // For files larger than ~1 MB the Contents API returns `encoding: "none"`
+  // and an empty `content` field. Fall through to the Git Blobs API, which
+  // returns base64-encoded content for blobs up to 100 MB.
+  if (json.encoding === "none") {
+    return await readBlobBySha(path, json.sha);
+  }
+
+  throw new Error(`Unexpected encoding for ${path}: ${json.encoding}`);
+}
+
+/**
+ * Read a blob by its SHA via the Git Blobs API.
+ *
+ * Used as a large-file fallback when the Contents API returns
+ * `encoding: "none"`. Returns the same shape as `readFile`.
+ */
+async function readBlobBySha(path: string, sha: string): Promise<GitHubFile> {
+  const response = await fetch(blobsUrl(sha), {
+    method: "GET",
+    headers: headers(),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `GitHub blob read failed for ${path} sha=${sha} (${response.status}): ${body}`,
+    );
+  }
+
+  const json = (await response.json()) as {
+    content: string;
+    sha: string;
+    encoding: string;
+  };
+
   if (json.encoding !== "base64") {
-    throw new Error(`Unexpected encoding for ${path}: ${json.encoding}`);
+    throw new Error(
+      `Unexpected blob encoding for ${path} sha=${sha}: ${json.encoding}`,
+    );
   }
 
   const content = Buffer.from(json.content, "base64").toString("utf-8");
