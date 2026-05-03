@@ -67,29 +67,32 @@ export const POST = withAuth(async (request: NextRequest) => {
   // 5. Attach links to the note
   note.links = links;
 
-  // 6. Commit note file and backlinks index concurrently.
-  //    The note write has no SHA dependency (new file) so it never conflicts.
-  //    The backlinks write uses optimistic-concurrency retry for the same
-  //    reason as embeddings: concurrent note additions race on the same file.
+  // 6. Commit note file, then backlinks index, then embeddings.
+  //
+  //    Earlier this used Promise.all([writeFile, updateJsonFileWithRetry]) for
+  //    parallelism, but GitHub serializes commits to a single branch and returns
+  //    409 to the loser of the race. writeFile has no retry, so the note write
+  //    occasionally lost and propagated GitHubConflictError to the caller while
+  //    the backlinks update silently retried and succeeded. Serializing the
+  //    three writes adds ~500ms to the request but eliminates the in-request
+  //    race entirely. Multi-request races (two concurrent /api/add-note calls)
+  //    are still handled by updateJsonFileWithRetry on the index files.
   const serialized = serializeNote(note);
   const path = noteFilePath(note.id, NOTES_DIR);
 
-  await Promise.all([
-    writeFile({
-      path,
-      content: serialized,
-      message: `Add note ${note.id}`,
-    }),
-    updateJsonFileWithRetry<BacklinksIndex>(
-      BACKLINKS_INDEX_PATH,
-      emptyBacklinksIndex,
-      (idx) => applyMatches(idx, note.id, links),
-      `Update backlinks: add ${note.id}`,
-    ),
-  ]);
+  await writeFile({
+    path,
+    content: serialized,
+    message: `Add note ${note.id}`,
+  });
 
-  // 7. Update embeddings index with optimistic-concurrency retry.
-  //    Separated from step 6 so a conflict here never rolls back the note.
+  await updateJsonFileWithRetry<BacklinksIndex>(
+    BACKLINKS_INDEX_PATH,
+    emptyBacklinksIndex,
+    (idx) => applyMatches(idx, note.id, links),
+    `Update backlinks: add ${note.id}`,
+  );
+
   await upsertEmbeddingWithRetry(
     note.id,
     embedding,
