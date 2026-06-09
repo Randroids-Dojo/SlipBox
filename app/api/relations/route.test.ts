@@ -162,7 +162,7 @@ describe("POST /api/relations", () => {
 
   it("rejects a pair not present in the backlinks index", async () => {
     fetchSpy.spy
-      // readBacklinksIndex — only A↔B exists
+      // readBacklinksIndex - only A↔B exists
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(BACKLINKS_A_B)))
       // readRelationsIndex
       .mockResolvedValueOnce(fakeGitHubContents(JSON.stringify(EMPTY_RELATIONS)));
@@ -285,7 +285,7 @@ describe("POST /api/relations", () => {
 
     expect(response.status).toBe(200);
     const json = await response.json();
-    // total stays at 1 — same pair, updated in place
+    // total stays at 1 - same pair, updated in place
     expect(json.updated).toBe(1);
     expect(json.total).toBe(1);
 

@@ -22,7 +22,7 @@ describe("createSessionToken", () => {
     expect(/^[0-9a-f]+$/.test(token)).toBe(true);
   });
 
-  it("is deterministic — same secret yields same token", async () => {
+  it("is deterministic - same secret yields same token", async () => {
     const a = await createSessionToken("secret");
     const b = await createSessionToken("secret");
     expect(a).toBe(b);

@@ -1,7 +1,7 @@
 /**
  * GET /api/health
  *
- * Liveness probe — returns HTTP 200 when the service is running.
+ * Liveness probe - returns HTTP 200 when the service is running.
  * No authentication required.
  */
 

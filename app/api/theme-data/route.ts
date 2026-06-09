@@ -7,7 +7,7 @@
  * POST /api/add-note.
  *
  * Note contents include the optional title and markdown body extracted
- * from each note's serialized frontmatter. No embeddings are returned —
+ * from each note's serialized frontmatter. No embeddings are returned - 
  * only the human-readable content the agent needs to reason over.
  *
  * Requires a current clusters index (run cluster-pass first).
@@ -43,7 +43,7 @@ export const GET = withAuth(async () => {
   const allNoteIds = [...new Set(clusters.flatMap((c) => c.noteIds))];
   const notesMap = await fetchNotesMap(allNoteIds, NOTES_DIR);
 
-  // 3. Shape the cluster payload — attach note content to each cluster
+  // 3. Shape the cluster payload - attach note content to each cluster
   const clusterPayload = clusters.map((c) => ({
     id: c.id,
     noteIds: c.noteIds,

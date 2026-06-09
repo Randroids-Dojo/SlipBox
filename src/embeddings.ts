@@ -1,5 +1,5 @@
 /**
- * Embedding module — pluggable provider interface + OpenAI implementation.
+ * Embedding module - pluggable provider interface + OpenAI implementation.
  *
  * Generates dense vector embeddings from text content. The provider interface
  * allows swapping embedding backends without changing consumer code.

@@ -84,7 +84,7 @@ const emptyRelations = makeRelations([]);
 // Orphan-note detection
 // ---------------------------------------------------------------------------
 
-describe("detectExplorations — orphan-note", () => {
+describe("detectExplorations - orphan-note", () => {
   it("flags notes with zero backlinks", () => {
     const embeddings = makeEmbeddings(["a", "b", "c"]);
     const backlinks = makeBacklinks({ b: ["a"], a: ["b"] }); // c has no links
@@ -162,9 +162,9 @@ describe("detectExplorations — orphan-note", () => {
 // Close-clusters detection
 // ---------------------------------------------------------------------------
 
-describe("detectExplorations — close-clusters", () => {
+describe("detectExplorations - close-clusters", () => {
   it("flags cluster pairs with centroid similarity above threshold", () => {
-    // Very similar centroids — cos sim ≈ 1.0
+    // Very similar centroids - cos sim ≈ 1.0
     const clusters = makeClusters([
       { id: "c1", centroid: [1, 0, 0], noteIds: ["a"] },
       { id: "c2", centroid: [0.999, 0.045, 0], noteIds: ["b"] },
@@ -186,7 +186,7 @@ describe("detectExplorations — close-clusters", () => {
   });
 
   it("does not flag cluster pairs with centroids below threshold", () => {
-    // Orthogonal centroids — cos sim = 0.0
+    // Orthogonal centroids - cos sim = 0.0
     const clusters = makeClusters([
       { id: "c1", centroid: [1, 0, 0], noteIds: ["a"] },
       { id: "c2", centroid: [0, 1, 0], noteIds: ["b"] },
@@ -225,7 +225,7 @@ describe("detectExplorations — close-clusters", () => {
   });
 
   it("checks all pairs in an n-cluster graph", () => {
-    // Three similar clusters — should produce 3 pair suggestions
+    // Three similar clusters - should produce 3 pair suggestions
     const clusters = makeClusters([
       { id: "c1", centroid: [1, 0, 0], noteIds: ["a"] },
       { id: "c2", centroid: [0.999, 0.045, 0], noteIds: ["b"] },
@@ -295,7 +295,7 @@ describe("detectExplorations — close-clusters", () => {
 // Structural-hole detection
 // ---------------------------------------------------------------------------
 
-describe("detectExplorations — structural-hole", () => {
+describe("detectExplorations - structural-hole", () => {
   it("flags clusters with no typed relations to external notes", () => {
     const clusters = makeClusters([
       { id: "c1", centroid: [1, 0, 0], noteIds: ["a", "b"] },
@@ -387,7 +387,7 @@ describe("detectExplorations — structural-hole", () => {
 // Meta-note-missing detection
 // ---------------------------------------------------------------------------
 
-describe("detectExplorations — meta-note-missing", () => {
+describe("detectExplorations - meta-note-missing", () => {
   it("flags clusters with no meta note", () => {
     const clusters = makeClusters([
       { id: "c1", centroid: [1, 0, 0], noteIds: ["a", "b"] },
@@ -494,7 +494,7 @@ describe("detectExplorations — meta-note-missing", () => {
 // Output shape and metadata
 // ---------------------------------------------------------------------------
 
-describe("detectExplorations — output shape", () => {
+describe("detectExplorations - output shape", () => {
   it("returns suggestions array and computedAt", () => {
     const result = detectExplorations(
       emptyEmbeddings,

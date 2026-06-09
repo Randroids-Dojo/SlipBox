@@ -1,5 +1,5 @@
 /**
- * Clustering module — k-means clustering of embedding vectors.
+ * Clustering module - k-means clustering of embedding vectors.
  *
  * Pure math, no external dependencies. Partitions notes into semantic
  * clusters by running k-means on their embedding vectors. The number
@@ -234,7 +234,7 @@ export function kmeans(
       if (counts[c] > 0) {
         scaleInPlace(newCentroids[c], 1 / counts[c]);
       } else {
-        // Empty cluster — keep old centroid
+        // Empty cluster - keep old centroid
         newCentroids[c] = [...centroids[c]];
       }
     }
@@ -247,7 +247,7 @@ export function kmeans(
 
 /**
  * Total within-cluster sum of squared distances (k-means objective).
- * Lower is better — a tighter, more balanced partition.
+ * Lower is better - a tighter, more balanced partition.
  */
 export function computeInertia(
   vectors: EmbeddingVector[],

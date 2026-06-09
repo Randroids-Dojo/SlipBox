@@ -100,7 +100,7 @@ export function getOpenAIApiKey(): string {
  * range (median ~0.33, max ~0.71 measured across a real 45-note graph).
  * The original 0.82 default was an uncalibrated guess that sat *above* the
  * observed maximum, so almost no links were ever created. 0.50 links the
- * strongest ~10–15% of related pairs — meaningful connections without a
+ * strongest ~10–15% of related pairs - meaningful connections without a
  * hairball. Override via the SIMILARITY_THRESHOLD env var.
  */
 export const SIMILARITY_THRESHOLD = optionalNumericEnv(
@@ -219,7 +219,7 @@ export const TENSIONS_INDEX_PATH = optionalEnv(
  * Calibrated for `text-embedding-3-large`. Because in-cluster pairs already
  * have a median cosine similarity around 0.33, the original 0.72 default
  * flagged ~99% of every cluster as "tension" (252 of 252 pairs in a real
- * graph) — pure noise. 0.20 surfaces only the genuinely divergent tail
+ * graph) - pure noise. 0.20 surfaces only the genuinely divergent tail
  * (~5–10% of in-cluster pairs). Override via the TENSION_THRESHOLD env var.
  *
  * NOTE: low cosine similarity indicates *topical distance*, not logical
@@ -279,7 +279,7 @@ export const SNAPSHOTS_INDEX_PATH = optionalEnv(
  *
  * Calibrated for `text-embedding-3-large`. Note-to-centroid similarities run
  * a median of ~0.67 (min ~0.47, max ~0.86 on a real 47-note graph), so the
- * original 0.70 default flagged ~66% of all notes as outliers — inflating the
+ * original 0.70 default flagged ~66% of all notes as outliers - inflating the
  * decay index with false positives. 0.50 flags only the genuine low tail
  * (notes that barely belong to their own cluster). Override via the
  * CLUSTER_OUTLIER_THRESHOLD env var.
@@ -314,7 +314,7 @@ export const EXPLORATIONS_INDEX_PATH = optionalEnv(
  *
  * Calibrated for `text-embedding-3-large`. Centroid-to-centroid similarities
  * top out around 0.74 (a real graph's closest cluster pair), so the original
- * 0.85 default could never fire — close-cluster detection was effectively dead.
+ * 0.85 default could never fire - close-cluster detection was effectively dead.
  * 0.70 surfaces genuinely adjacent clusters (the closest pair sits well above
  * the ~0.55 baseline) as merge candidates. Override via the
  * CLOSE_CLUSTER_THRESHOLD env var.

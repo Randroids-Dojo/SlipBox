@@ -1,5 +1,5 @@
 /**
- * Note module — ID generation, content normalization, validation, and serialization.
+ * Note module - ID generation, content normalization, validation, and serialization.
  *
  * Given a raw content string, this module produces a well-formed Note object
  * ready for embedding and storage in PrivateBox.

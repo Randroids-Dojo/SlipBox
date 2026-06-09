@@ -1,12 +1,12 @@
 /**
- * Exploration module — detect structural gaps in the knowledge graph.
+ * Exploration module - detect structural gaps in the knowledge graph.
  *
  * Pure computation, no external dependencies. Scans four types of gaps:
  *
- *   orphan-note       — notes in the embeddings index with zero backlinks
- *   close-clusters    — cluster pairs with centroid similarity > threshold
- *   structural-hole   — clusters with no typed relations to external notes
- *   meta-note-missing — clusters where no member note has `type: meta`
+ *   orphan-note - notes in the embeddings index with zero backlinks
+ *   close-clusters - cluster pairs with centroid similarity > threshold
+ *   structural-hole - clusters with no typed relations to external notes
+ *   meta-note-missing - clusters where no member note has `type: meta`
  */
 
 import type {
@@ -59,7 +59,7 @@ export function detectExplorations(
   const suggestions: ExplorationSuggestion[] = [];
   let counter = 0;
 
-  // 1. Orphan notes — in embeddings but with zero backlinks
+  // 1. Orphan notes - in embeddings but with zero backlinks
   for (const noteId of Object.keys(embeddingsIndex.embeddings)) {
     const links = backlinksIndex.links[noteId] ?? [];
     if (links.length === 0) {
@@ -72,7 +72,7 @@ export function detectExplorations(
     }
   }
 
-  // 2. Close clusters — centroid pairs above similarity threshold
+  // 2. Close clusters - centroid pairs above similarity threshold
   const clusters = Object.values(clustersIndex.clusters);
   for (let i = 0; i < clusters.length; i++) {
     for (let j = i + 1; j < clusters.length; j++) {
@@ -93,7 +93,7 @@ export function detectExplorations(
     }
   }
 
-  // 3. Structural holes — clusters with no typed relations to external notes
+  // 3. Structural holes - clusters with no typed relations to external notes
   const relations = Object.values(relationsIndex.relations);
   for (const cluster of clusters) {
     const memberSet = new Set(cluster.noteIds);
@@ -113,7 +113,7 @@ export function detectExplorations(
     }
   }
 
-  // 4. Meta-note missing — clusters with no member that has type: meta
+  // 4. Meta-note missing - clusters with no member that has type: meta
   if (config.metaNoteIds) {
     const metaIds = config.metaNoteIds;
     for (const cluster of clusters) {

@@ -12,7 +12,7 @@ Implementation roadmap for SlipBox.
 
 ---
 
-## Priority 1 — Project Scaffolding ✓
+## Priority 1 - Project Scaffolding ✓
 
 Set up the runnable skeleton before writing any logic.
 
@@ -26,32 +26,32 @@ Set up the runnable skeleton before writing any logic.
 
 ---
 
-## Priority 2 — Core Types ✓
+## Priority 2 - Core Types ✓
 
 Define the data shapes everything else builds on.
 
-- [x] `types/note.ts` — Note ID, content, metadata, timestamps, links
-- [x] `types/embedding.ts` — Embedding vector, note reference, model identifier
+- [x] `types/note.ts` - Note ID, content, metadata, timestamps, links
+- [x] `types/embedding.ts` - Embedding vector, note reference, model identifier
 
 **Done when:** Types compile and are importable from `/types`.
 
 ---
 
-## Priority 3 — Config Module ✓
+## Priority 3 - Config Module ✓
 
 Centralize tunables so nothing is hardcoded in logic.
 
-- [x] `src/config.ts` — Similarity threshold (0.50, calibrated for text-embedding-3-large), embedding model name, PrivateBox repo coordinates, GitHub API base URL
+- [x] `src/config.ts` - Similarity threshold (0.50, calibrated for text-embedding-3-large), embedding model name, PrivateBox repo coordinates, GitHub API base URL
 
 **Done when:** Config values are importable and overridable via env vars.
 
 ---
 
-## Priority 4 — Note Module ✓
+## Priority 4 - Note Module ✓
 
 Handle note creation independent of storage.
 
-- [x] `src/note.ts` — Generate unique note ID (timestamp + hash)
+- [x] `src/note.ts` - Generate unique note ID (timestamp + hash)
 - [x] Normalize content to atomic note format (frontmatter + body)
 - [x] Validate note structure
 - [x] Serialize note to markdown with YAML frontmatter
@@ -61,11 +61,11 @@ Handle note creation independent of storage.
 
 ---
 
-## Priority 5 — Embedding Module ✓
+## Priority 5 - Embedding Module ✓
 
 Generate embeddings with a pluggable provider interface.
 
-- [x] `src/embeddings.ts` — `EmbeddingProvider` interface (`embed(text: string): Promise<number[]>`)
+- [x] `src/embeddings.ts` - `EmbeddingProvider` interface (`embed(text: string): Promise<number[]>`)
 - [x] OpenAI implementation using `text-embedding-3-large` (direct `fetch`, no SDK dependency)
 - [x] `embedNote()` convenience helper to produce `NoteEmbedding` records
 - [x] Unit tests with mocked OpenAI responses (8 tests via vitest)
@@ -74,24 +74,24 @@ Generate embeddings with a pluggable provider interface.
 
 ---
 
-## Priority 6 — Similarity Module ✓
+## Priority 6 - Similarity Module ✓
 
 Pure math, no external dependencies.
 
-- [x] `src/similarity.ts` — Cosine similarity function
-- [x] `findMatches()` — find all notes above threshold given a target embedding and an embeddings index
-- [x] `matchesToLinks()` — convert similarity matches to `NoteLink` objects
+- [x] `src/similarity.ts` - Cosine similarity function
+- [x] `findMatches()` - find all notes above threshold given a target embedding and an embeddings index
+- [x] `matchesToLinks()` - convert similarity matches to `NoteLink` objects
 - [x] Unit tests with known vectors (16 tests via vitest)
 
 **Done when:** Given two vectors, returns correct cosine similarity. Given an index, returns ranked matches above threshold.
 
 ---
 
-## Priority 7 — GitHub Integration ✓
+## Priority 7 - GitHub Integration ✓
 
 Read and write PrivateBox contents via GitHub API.
 
-- [x] `src/github.ts` — Read file from repo (with SHA tracking for updates)
+- [x] `src/github.ts` - Read file from repo (with SHA tracking for updates)
 - [x] Write/update file in repo (commit via Contents API)
 - [x] Read `embeddings.json` and `backlinks.json` index files
 - [x] Write updated index files back
@@ -102,22 +102,22 @@ Read and write PrivateBox contents via GitHub API.
 
 ---
 
-## Priority 8 — Graph Module ✓
+## Priority 8 - Graph Module ✓
 
 Manage the backlink structure.
 
-- [x] `src/graph.ts` — Add bidirectional link between two note IDs
+- [x] `src/graph.ts` - Add bidirectional link between two note IDs
 - [x] Remove link
 - [x] Serialize/deserialize `backlinks.json`
-- [x] `rebuildBacklinks()` — rebuild full index from link pairs (used by link-pass)
-- [x] `types/graph.ts` — `BacklinksIndex` type definition
+- [x] `rebuildBacklinks()` - rebuild full index from link pairs (used by link-pass)
+- [x] `types/graph.ts` - `BacklinksIndex` type definition
 - [x] Unit tests (17 tests via vitest)
 
 **Done when:** Backlink graph can be built, modified, and persisted.
 
 ---
 
-## Priority 9 — POST /api/add-note ✓
+## Priority 9 - POST /api/add-note ✓
 
 The first real endpoint. Ties everything together.
 
@@ -131,7 +131,7 @@ The first real endpoint. Ties everything together.
 
 ---
 
-## Priority 10 — POST /api/link-pass ✓
+## Priority 10 - POST /api/link-pass ✓
 
 Batch recomputation of all links.
 
@@ -150,7 +150,7 @@ Batch recomputation of all links.
 Protect inbound endpoints so only authorized clients (e.g. your ChatGPT) can call them.
 
 - [x] `SLIPBOX_API_KEY` environment variable in config (lazy-validated)
-- [x] `src/auth.ts` — `verifyAuth()` checks `Authorization: Bearer <key>` header
+- [x] `src/auth.ts` - `verifyAuth()` checks `Authorization: Bearer <key>` header
 - [x] Constant-time token comparison to prevent timing attacks
 - [x] Clear error responses: 401 for missing/malformed header, 403 for wrong key
 - [x] Unit tests (8 tests via vitest)
@@ -159,28 +159,28 @@ Protect inbound endpoints so only authorized clients (e.g. your ChatGPT) can cal
 
 ---
 
-## Phase 2 — Clustering & Tension Detection
+## Phase 2 - Clustering & Tension Detection
 
 ---
 
-## Priority 11 — Cluster Module ✓
+## Priority 11 - Cluster Module ✓
 
 Pure k-means clustering of the embedding space, no external dependencies.
 
-- [x] `types/cluster.ts` — `Cluster`, `ClustersIndex` type definitions
-- [x] `src/cluster.ts` — k-means++ initialization, k-means algorithm, automatic K selection via sqrt(n/2) heuristic
-- [x] `squaredDistance()` — Euclidean distance for assignment step
-- [x] `chooseK()` — Automatic cluster count selection bounded by configurable min/max
-- [x] `clusterEmbeddings()` — High-level function: embeddings index → clusters index
+- [x] `types/cluster.ts` - `Cluster`, `ClustersIndex` type definitions
+- [x] `src/cluster.ts` - k-means++ initialization, k-means algorithm, automatic K selection via sqrt(n/2) heuristic
+- [x] `squaredDistance()` - Euclidean distance for assignment step
+- [x] `chooseK()` - Automatic cluster count selection bounded by configurable min/max
+- [x] `clusterEmbeddings()` - High-level function: embeddings index → clusters index
 - [x] Config tunables: `CLUSTERS_INDEX_PATH`, `MIN_CLUSTERS`, `MAX_CLUSTERS`, `KMEANS_MAX_ITERATIONS`, `MIN_NOTES_FOR_CLUSTERING`, `KMEANS_RESTARTS`, `KMEANS_SEED`
-- [x] Deterministic, balanced clustering: best-of-N restarts (`kmeansBest`) keyed by a seeded RNG (`makeRng`), selecting the lowest-`computeInertia` partition — no run-to-run drift
+- [x] Deterministic, balanced clustering: best-of-N restarts (`kmeansBest`) keyed by a seeded RNG (`makeRng`), selecting the lowest-`computeInertia` partition - no run-to-run drift
 - [x] Unit tests (22 tests via vitest)
 
 **Done when:** Given an embeddings index, produces semantically grouped clusters with centroids.
 
 ---
 
-## Priority 12 — POST /api/cluster-pass ✓
+## Priority 12 - POST /api/cluster-pass ✓
 
 Cluster the embedding space and persist results.
 
@@ -196,12 +196,12 @@ Cluster the embedding space and persist results.
 
 ---
 
-## Priority 13 — Tension Module ✓
+## Priority 13 - Tension Module ✓
 
 Pure embedding-space tension detection, no external dependencies.
 
-- [x] `types/tension.ts` — `Tension`, `TensionsIndex` type definitions
-- [x] `src/tension.ts` — `detectTensions()` scans clusters for divergent note pairs
+- [x] `types/tension.ts` - `Tension`, `TensionsIndex` type definitions
+- [x] `src/tension.ts` - `detectTensions()` scans clusters for divergent note pairs
 - [x] Pairwise cosine similarity within each cluster; pairs below threshold are flagged
 - [x] Canonical note ordering (smaller ID first) in tension records
 - [x] Config tunables: `TENSIONS_INDEX_PATH`, `TENSION_THRESHOLD`, `MIN_NOTES_FOR_TENSION`
@@ -211,7 +211,7 @@ Pure embedding-space tension detection, no external dependencies.
 
 ---
 
-## Priority 14 — POST /api/tension-pass ✓
+## Priority 14 - POST /api/tension-pass ✓
 
 Detect tensions and persist results.
 
@@ -229,15 +229,15 @@ Detect tensions and persist results.
 
 ---
 
-## Phase 3 — Theme Synthesis
+## Phase 3 - Theme Synthesis
 
 ---
 
-## Priority 15 — Nightly Scheduled Passes ✓
+## Priority 15 - Nightly Scheduled Passes ✓
 
 Automate the link, cluster, and tension passes via GitHub Actions.
 
-- [x] `.github/workflows/nightly-passes.yml` — runs at 3 AM UTC daily
+- [x] `.github/workflows/nightly-passes.yml` - runs at 3 AM UTC daily
 - [x] Jobs chained: link-pass → cluster-pass → tension-pass
 - [x] `workflow_dispatch` for manual runs
 - [x] `SLIPBOX_URL` and `SLIPBOX_API_KEY` as GitHub Actions secrets
@@ -246,7 +246,7 @@ Automate the link, cluster, and tension passes via GitHub Actions.
 
 ---
 
-## Priority 16 — GET /api/theme-data ✓
+## Priority 16 - GET /api/theme-data ✓
 
 Expose a read endpoint so local LLM agents can fetch everything needed to
 synthesize meta-notes without making expensive OpenAI chat API calls.
@@ -268,7 +268,7 @@ and POST them back as tagged meta-notes without any OpenAI chat API calls.
 
 ---
 
-## Phase 4 — Knowledge Evolution & Theory Discovery
+## Phase 4 - Knowledge Evolution & Theory Discovery
 
 Phase 4 turns SlipBox from a structured repository into a self-evolving cognitive
 space: typed semantic edges, research hypothesis generation, staleness detection,
@@ -283,11 +283,11 @@ API calls server-side. Applies to relation typing, hypothesis generation, and
 refinement suggestions.
 
 **B. New index files in PrivateBox** (same pattern as existing indexes):
-- `index/relations.json` — typed semantic edges
-- `index/decay.json` — staleness scores
-- `index/refinements.json` — LLM-suggested note edits (advisory only)
-- `index/explorations.json` — structural gap suggestions
-- `index/snapshots.json` — append-only evolution timeline
+- `index/relations.json` - typed semantic edges
+- `index/decay.json` - staleness scores
+- `index/refinements.json` - LLM-suggested note edits (advisory only)
+- `index/explorations.json` - structural gap suggestions
+- `index/snapshots.json` - append-only evolution timeline
 
 **C. Hard constraint preserved:** No automatic note rewriting. Refinements are
 suggestions only. Hypotheses are submitted as typed meta-notes via the existing
@@ -295,30 +295,30 @@ suggestions only. Hypotheses are submitted as typed meta-notes via the existing
 
 ---
 
-## Priority 17 — Relation Types + RelationsIndex ✓
+## Priority 17 - Relation Types + RelationsIndex ✓
 
 Define the semantic edge vocabulary and the index that stores typed links.
 
-- [x] `types/relation.ts` — `RelationType`, `TypedLink`, `RelationsIndex` type definitions
+- [x] `types/relation.ts` - `RelationType`, `TypedLink`, `RelationsIndex` type definitions
 - [x] `RelationType`: `'supports' | 'contradicts' | 'refines' | 'is-example-of' | 'contrasts-with'`
-- [x] `TypedLink` — noteA, noteB, relationType, reason (LLM annotation, ~1 sentence), similarity, classifiedAt
-- [x] `RelationsIndex` — keyed by `${noteA}:${noteB}` in canonical (smaller ID first) order
-- [x] `src/relation.ts` — `canonicalKey()`, `upsertRelation()`, `getRelationsForNote()`, serialize/deserialize, `emptyRelationsIndex()`
+- [x] `TypedLink` - noteA, noteB, relationType, reason (LLM annotation, ~1 sentence), similarity, classifiedAt
+- [x] `RelationsIndex` - keyed by `${noteA}:${noteB}` in canonical (smaller ID first) order
+- [x] `src/relation.ts` - `canonicalKey()`, `upsertRelation()`, `getRelationsForNote()`, serialize/deserialize, `emptyRelationsIndex()`
 - [x] `readRelationsIndex()`, `writeRelationsIndex()` GitHub helpers in `src/github.ts`
-- [x] Unit tests (27 via vitest) — serialization, canonical ordering, upsert semantics, filtering
+- [x] Unit tests (27 via vitest) - serialization, canonical ordering, upsert semantics, filtering
 
 **Done when:** Types compile, module functions pass unit tests, GitHub helpers exist.
 
 ---
 
-## Priority 18 — GET /api/link-data ✓
+## Priority 18 - GET /api/link-data ✓
 
 Expose linked note pairs with full note content for local LLM relation classification.
 
 - [x] `app/api/link-data/route.ts`
 - [x] Fetch backlinks + relations + note contents in parallel
 - [x] Build pair list from backlinks, join existing relation types
-- [x] Return `{ pairs[], pairCount, classifiedCount, computedAt }` — each pair includes noteA/noteB content + existing relation if any
+- [x] Return `{ pairs[], pairCount, classifiedCount, computedAt }` - each pair includes noteA/noteB content + existing relation if any
 - [x] `?unclassifiedOnly=true` query param to filter to unclassified pairs (incremental runs)
 - [x] Integration tests (6 via vitest)
 
@@ -326,7 +326,7 @@ Expose linked note pairs with full note content for local LLM relation classific
 
 ---
 
-## Priority 19 — POST /api/relations ✓
+## Priority 19 - POST /api/relations ✓
 
 Accept typed relation records from a local LLM agent and persist them.
 
@@ -341,30 +341,30 @@ Accept typed relation records from a local LLM agent and persist them.
 
 ---
 
-## Priority 20 — Decay Module + POST /api/decay-pass ✓
+## Priority 20 - Decay Module + POST /api/decay-pass ✓
 
-Pure-math staleness detection — no LLM, no external dependencies. Same pattern as tension detection.
+Pure-math staleness detection - no LLM, no external dependencies. Same pattern as tension detection.
 
-- [x] `types/decay.ts` — `DecayRecord`, `DecayReason`, `DecayIndex` type definitions
+- [x] `types/decay.ts` - `DecayRecord`, `DecayReason`, `DecayIndex` type definitions
 - [x] `DecayReason`: `'no-links' | 'low-link-density' | 'cluster-outlier' | 'no-cluster'`
-- [x] `src/decay.ts` — `computeDecay(embeddingsIndex, backlinksIndex, clustersIndex, outlierThreshold?, scoreThreshold?)` → `DecayIndex`
+- [x] `src/decay.ts` - `computeDecay(embeddingsIndex, backlinksIndex, clustersIndex, outlierThreshold?, scoreThreshold?)` → `DecayIndex`
 - [x] Scoring: `+0.4` no-links, `+0.2` low-link-density (< 2 links), `+0.3` cluster-outlier (similarity to centroid < threshold), `+0.1` no-cluster; capped at 1.0
-- [x] Config tunables: `DECAY_INDEX_PATH`, `CLUSTER_OUTLIER_THRESHOLD` (default 0.70), `DECAY_SCORE_THRESHOLD` (default 0.3 — minimum score to include)
-- [x] `app/api/decay-pass/route.ts` — fetch indexes → run decay → commit `decay.json` → return `{ staleCount, records[] }`
+- [x] Config tunables: `DECAY_INDEX_PATH`, `CLUSTER_OUTLIER_THRESHOLD` (default 0.70), `DECAY_SCORE_THRESHOLD` (default 0.3 - minimum score to include)
+- [x] `app/api/decay-pass/route.ts` - fetch indexes → run decay → commit `decay.json` → return `{ staleCount, records[] }`
 - [x] `readDecayIndex()`, `writeDecayIndex()` GitHub helpers
-- [x] Unit tests (25 via vitest) — each scoring component; integration tests (4)
+- [x] Unit tests (25 via vitest) - each scoring component; integration tests (4)
 
 **Done when:** decay-pass detects isolated, low-link, and outlier notes correctly; commits decay.json.
 
 ---
 
-## Priority 21 — GET /api/hypothesis-data ✓
+## Priority 21 - GET /api/hypothesis-data ✓
 
 Expose tension pairs with cluster context so a local LLM can generate research hypotheses.
 
 - [x] `app/api/hypothesis-data/route.ts`
 - [x] Fetch tensions + clusters + note contents in parallel
-- [x] Return `{ tensions[], tensionCount, computedAt }` — each tension includes full noteA/noteB content + cluster sibling notes
+- [x] Return `{ tensions[], tensionCount, computedAt }` - each tension includes full noteA/noteB content + cluster sibling notes
 - [x] Local LLM generates hypothesis statement, 2–3 open questions, and cluster combination suggestions
 - [x] Hypotheses submitted back as notes via existing `POST /api/add-note` with `type: hypothesis` frontmatter tag (no new storage format needed)
 - [x] Integration tests (6 via vitest)
@@ -373,66 +373,66 @@ Expose tension pairs with cluster context so a local LLM can generate research h
 
 ---
 
-## Priority 22 — Refinement Pass (GET + POST) ✓
+## Priority 22 - Refinement Pass (GET + POST) ✓
 
 Advisory-only note improvement suggestions from a local LLM. No automatic edits.
 
-- [x] `types/refinement.ts` — `RefinementType`, `RefinementSuggestion`, `RefinementsIndex` type definitions
+- [x] `types/refinement.ts` - `RefinementType`, `RefinementSuggestion`, `RefinementsIndex` type definitions
 - [x] `RefinementType`: `'retitle' | 'split' | 'merge-suggest' | 'update'`
-- [x] `RefinementSuggestion` — id, noteId, type, suggestion (proposed change), reason, relatedNoteIds (for merge suggestions), generatedAt
-- [x] `app/api/refinement-data/route.ts` — expose clusters with full note content + decay records; optional `?clusterId=X` param
-- [x] `app/api/refinements/route.ts` — accept suggestions array, upsert to `index/refinements.json` by noteId + type
+- [x] `RefinementSuggestion` - id, noteId, type, suggestion (proposed change), reason, relatedNoteIds (for merge suggestions), generatedAt
+- [x] `app/api/refinement-data/route.ts` - expose clusters with full note content + decay records; optional `?clusterId=X` param
+- [x] `app/api/refinements/route.ts` - accept suggestions array, upsert to `index/refinements.json` by noteId + type
 - [x] `readRefinementsIndex()`, `writeRefinementsIndex()` GitHub helpers
-- [x] Code comment constraint: "Suggestions only — SlipBox never modifies user notes automatically."
+- [x] Code comment constraint: "Suggestions only - SlipBox never modifies user notes automatically."
 - [x] Integration tests (11 via vitest)
 
 **Done when:** Suggestions are persisted and queryable; they do not touch note files.
 
 ---
 
-## Priority 23 — Snapshot Module + Graph Analytics ✓
+## Priority 23 - Snapshot Module + Graph Analytics ✓
 
-Append-only evolution timeline — one snapshot per nightly run.
+Append-only evolution timeline - one snapshot per nightly run.
 
-- [x] `types/snapshot.ts` — `GraphSnapshot`, `SnapshotsIndex` type definitions
-- [x] `GraphSnapshot` — id, capturedAt, noteCount, linkCount, clusterCount, tensionCount, decayCount, clusterSizes (clusterId → noteCount), avgLinksPerNote
-- [x] `SnapshotsIndex` — append-only array ordered by capturedAt
-- [x] `src/snapshot.ts` — `captureSnapshot(embeddingsIndex, backlinksIndex, clustersIndex, tensionsIndex, decayIndex)` → `GraphSnapshot`
-- [x] `app/api/snapshot/route.ts` — fetch all indexes → compute snapshot → append to `index/snapshots.json` → return new snapshot
-- [x] `app/api/analytics/route.ts` — return full snapshots array; optional `?since=ISO-DATE` param; include computed deltas between consecutive snapshots
+- [x] `types/snapshot.ts` - `GraphSnapshot`, `SnapshotsIndex` type definitions
+- [x] `GraphSnapshot` - id, capturedAt, noteCount, linkCount, clusterCount, tensionCount, decayCount, clusterSizes (clusterId → noteCount), avgLinksPerNote
+- [x] `SnapshotsIndex` - append-only array ordered by capturedAt
+- [x] `src/snapshot.ts` - `captureSnapshot(embeddingsIndex, backlinksIndex, clustersIndex, tensionsIndex, decayIndex)` → `GraphSnapshot`
+- [x] `app/api/snapshot/route.ts` - fetch all indexes → compute snapshot → append to `index/snapshots.json` → return new snapshot
+- [x] `app/api/analytics/route.ts` - return full snapshots array; optional `?since=ISO-DATE` param; include computed deltas between consecutive snapshots
 - [x] `readSnapshotsIndex()`, `writeSnapshotsIndex()` GitHub helpers
-- [x] Unit tests (15+ via vitest) — snapshot computation, delta calculation; integration tests (3+)
+- [x] Unit tests (15+ via vitest) - snapshot computation, delta calculation; integration tests (3+)
 
 **Done when:** Nightly runs accumulate a queryable daily timeline; analytics endpoint shows growth trajectory with deltas.
 
 ---
 
-## Priority 24 — Exploration Pass (pure math) ✓
+## Priority 24 - Exploration Pass (pure math) ✓
 
-Structural gap detection — no LLM, no external dependencies.
+Structural gap detection - no LLM, no external dependencies.
 
-- [x] `types/exploration.ts` — `ExplorationSuggestionType`, `ExplorationSuggestion`, `ExplorationsIndex` type definitions
+- [x] `types/exploration.ts` - `ExplorationSuggestionType`, `ExplorationSuggestion`, `ExplorationsIndex` type definitions
 - [x] `ExplorationSuggestionType`: `'orphan-note' | 'close-clusters' | 'structural-hole' | 'meta-note-missing'`
-- [x] `src/exploration.ts` — `detectExplorations(embeddingsIndex, backlinksIndex, clustersIndex, relationsIndex, config)` → `ExplorationsIndex`
+- [x] `src/exploration.ts` - `detectExplorations(embeddingsIndex, backlinksIndex, clustersIndex, relationsIndex, config)` → `ExplorationsIndex`
 - [x] Detection logic:
   - **orphan-note:** notes in embeddings index with zero backlinks
-  - **close-clusters:** cluster pairs with centroid cosine similarity > `CLOSE_CLUSTER_THRESHOLD` (default 0.85) — candidates for merge
+  - **close-clusters:** cluster pairs with centroid cosine similarity > `CLOSE_CLUSTER_THRESHOLD` (default 0.85) - candidates for merge
   - **structural-hole:** clusters with no typed relations to any note outside the cluster
   - **meta-note-missing:** clusters where no member note has `type: meta` in frontmatter
 - [x] Config tunables: `EXPLORATIONS_INDEX_PATH`, `CLOSE_CLUSTER_THRESHOLD`
-- [x] `app/api/exploration-pass/route.ts` — fetch all indexes → run detection → commit `explorations.json` → return suggestion list
+- [x] `app/api/exploration-pass/route.ts` - fetch all indexes → run detection → commit `explorations.json` → return suggestion list
 - [x] `readExplorationsIndex()`, `writeExplorationsIndex()` GitHub helpers
-- [x] Unit tests (30 via vitest) — each detection type; integration tests (5)
+- [x] Unit tests (30 via vitest) - each detection type; integration tests (5)
 
 **Done when:** exploration-pass detects all four structural gap types and commits results.
 
 ---
 
-## Priority 25 — Nightly Phase 4 Passes ✓
+## Priority 25 - Nightly Phase 4 Passes ✓
 
 Extend the nightly GitHub Actions workflow to include Phase 4 passes.
 
-- [x] `.github/workflows/nightly-passes.yml` — extend job chain: `link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot`
+- [x] `.github/workflows/nightly-passes.yml` - extend job chain: `link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot`
 - [x] `decay-pass` and `exploration-pass` run in parallel (both depend on tension-pass, neither depends on the other)
 - [x] `snapshot` runs last after all indexes are fresh
 - [x] `workflow_dispatch` inputs to skip individual passes (for debugging)
@@ -441,17 +441,17 @@ Extend the nightly GitHub Actions workflow to include Phase 4 passes.
 
 ---
 
-## Priority 26 — Graph Explorer UI ✓
+## Priority 26 - Graph Explorer UI ✓
 
-Interactive visualization of the knowledge graph — the only Phase 4 frontend work.
+Interactive visualization of the knowledge graph - the only Phase 4 frontend work.
 
 - [x] Session authentication: `src/session.ts` (HMAC-SHA-256 stateless tokens), `middleware.ts` (protects `/graph/*`), `app/api/auth/login/route.ts`, `app/api/auth/logout/route.ts`
 - [x] `SLIPBOX_UI_PASSWORD` and `SESSION_SECRET` environment variables; cookie is `httpOnly`, `Secure`, `SameSite=Strict`
-- [x] `app/graph/login/page.tsx` — password form; redirects away if already authenticated
-- [x] `app/graph/page.tsx` — Server Component; fetches all indexes + note titles server-side (credentials never reach the browser)
-- [x] `app/graph/GraphCanvas.tsx` — force-directed graph component (`react-force-graph-2d`, SSR-disabled)
-- [x] `app/graph/types.ts` — `GraphNode`, `GraphLink`, `GraphData` types
-- [x] `app/api/graph/note/route.ts` — session-authed endpoint for lazy note content fetch on node click
+- [x] `app/graph/login/page.tsx` - password form; redirects away if already authenticated
+- [x] `app/graph/page.tsx` - Server Component; fetches all indexes + note titles server-side (credentials never reach the browser)
+- [x] `app/graph/GraphCanvas.tsx` - force-directed graph component (`react-force-graph-2d`, SSR-disabled)
+- [x] `app/graph/types.ts` - `GraphNode`, `GraphLink`, `GraphData` types
+- [x] `app/api/graph/note/route.ts` - session-authed endpoint for lazy note content fetch on node click
 - [x] One new dependency: `react-force-graph-2d` (only external dep added in Phase 4)
 - [x] Node encoding: size = link count, color = cluster, gray tint intensity = decay score
 - [x] Edge encoding: color = relation type (green = supports, red = contradicts, blue = refines, purple = is-example-of, yellow = contrasts-with, gray = unclassified)
@@ -475,7 +475,7 @@ Interactive visualization of the knowledge graph — the only Phase 4 frontend w
 ## Guiding Constraints
 
 - No user data in this repo. Ever.
-- No persistent database — GitHub is the database.
+- No persistent database - GitHub is the database.
 - No automatic note rewriting.
 - Every link must be deterministic and transparent.
 - Keep dependencies minimal.

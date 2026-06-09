@@ -5,9 +5,9 @@
  * to the relations index (relations.json) in PrivateBox.
  *
  * The typical workflow:
- *   1. GET /api/link-data — fetch unclassified pairs with note content
+ *   1. GET /api/link-data - fetch unclassified pairs with note content
  *   2. Local LLM classifies each pair
- *   3. POST /api/relations — submit classified records
+ *   3. POST /api/relations - submit classified records
  *
  * Validation:
  *   - Each record must reference a pair present in the backlinks index.

@@ -4,7 +4,7 @@
  * Accepts advisory refinement suggestions from a local LLM agent and persists
  * them to index/refinements.json in PrivateBox.
  *
- * Suggestions only — SlipBox never modifies user notes automatically.
+ * Suggestions only - SlipBox never modifies user notes automatically.
  *
  * Input:
  *   { "suggestions": [{ "noteId", "type", "suggestion", "reason", "relatedNoteIds"? }] }

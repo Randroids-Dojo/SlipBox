@@ -12,7 +12,7 @@ import {
 } from "./github";
 
 // ---------------------------------------------------------------------------
-// Environment setup — provide required env vars so config doesn't throw
+// Environment setup - provide required env vars so config doesn't throw
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
@@ -504,7 +504,7 @@ describe("upsertEmbeddingWithRetry", () => {
     expect(putBody.sha).toBe("sha-2");
   });
 
-  it("is idempotent — overwrites an existing entry without duplicating it", async () => {
+  it("is idempotent - overwrites an existing entry without duplicating it", async () => {
     const updatedEmbedding = { ...fakeEmbedding, createdAt: "2026-02-24T00:00:00.000Z" };
     const existingIndex = { embeddings: { "note-1": fakeEmbedding } };
 

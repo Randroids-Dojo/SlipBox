@@ -13,7 +13,7 @@
  * - existing relation classification if the pair has already been typed
  *
  * Query params:
- *   ?unclassifiedOnly=true  — return only pairs with no existing relation
+ *   ?unclassifiedOnly=true - return only pairs with no existing relation
  *                             type, for incremental classification runs
  *
  * Requires a current backlinks index (run link-pass first).

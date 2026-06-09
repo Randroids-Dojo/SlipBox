@@ -1,5 +1,5 @@
 /**
- * Snapshot module — capture a point-in-time summary of the knowledge graph.
+ * Snapshot module - capture a point-in-time summary of the knowledge graph.
  *
  * Pure computation, no external dependencies. Takes all five live indexes
  * and produces a GraphSnapshot recording counts and density metrics.

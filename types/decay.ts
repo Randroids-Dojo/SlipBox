@@ -14,11 +14,11 @@ import type { NoteId } from "./note";
 /**
  * The reason(s) a note received a staleness score.
  *
- * - `no-links`          — note has zero backlinks (+0.4)
- * - `low-link-density`  — note has fewer than 2 backlinks (+0.2)
- * - `cluster-outlier`   — note's similarity to its cluster centroid is below
+ * - `no-links` - note has zero backlinks (+0.4)
+ * - `low-link-density` - note has fewer than 2 backlinks (+0.2)
+ * - `cluster-outlier` - note's similarity to its cluster centroid is below
  *                         the outlier threshold (+0.3)
- * - `no-cluster`        — note does not appear in any cluster (+0.1)
+ * - `no-cluster` - note does not appear in any cluster (+0.1)
  */
 export type DecayReason =
   | "no-links"

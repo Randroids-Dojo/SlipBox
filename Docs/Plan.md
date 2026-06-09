@@ -33,28 +33,28 @@ Contains:
 
 /app
   /api
-    add-note          — POST: ingest a note, embed, link, commit
-    link-pass         — POST: recompute all backlinks
-    cluster-pass      — POST: k-means cluster the embedding space
-    tension-pass      — POST: detect divergent pairs within clusters
-    theme-data        — GET: fetch cluster/tension data for LLM synthesis
-    link-data         — GET: fetch backlink pairs with content for LLM classification
-    relations         — POST: persist typed relation records from LLM agent
-    decay-pass        — POST: score notes for staleness; commit decay.json
-    hypothesis-data   — GET: fetch tension/cluster data for LLM hypothesis generation
-    refinement-data   — GET: fetch cluster/decay data for LLM refinement analysis
-    refinements       — POST: persist advisory refinement suggestions from LLM agent
-    snapshot          — POST: capture point-in-time graph snapshot; append to snapshots.json
-    analytics         — GET: return snapshot history with deltas; supports ?since=ISO-DATE
-    exploration-pass  — POST: detect structural gaps; commit explorations.json
-    auth/login        — POST: validate SLIPBOX_UI_PASSWORD; set httpOnly session cookie
-    auth/logout       — POST: clear session cookie
-    graph/note        — GET: return parsed note content by ID (session-authed; browser-facing)
+    add-note - POST: ingest a note, embed, link, commit
+    link-pass - POST: recompute all backlinks
+    cluster-pass - POST: k-means cluster the embedding space
+    tension-pass - POST: detect divergent pairs within clusters
+    theme-data - GET: fetch cluster/tension data for LLM synthesis
+    link-data - GET: fetch backlink pairs with content for LLM classification
+    relations - POST: persist typed relation records from LLM agent
+    decay-pass - POST: score notes for staleness; commit decay.json
+    hypothesis-data - GET: fetch tension/cluster data for LLM hypothesis generation
+    refinement-data - GET: fetch cluster/decay data for LLM refinement analysis
+    refinements - POST: persist advisory refinement suggestions from LLM agent
+    snapshot - POST: capture point-in-time graph snapshot; append to snapshots.json
+    analytics - GET: return snapshot history with deltas; supports ?since=ISO-DATE
+    exploration-pass - POST: detect structural gaps; commit explorations.json
+    auth/login - POST: validate SLIPBOX_UI_PASSWORD; set httpOnly session cookie
+    auth/logout - POST: clear session cookie
+    graph/note - GET: return parsed note content by ID (session-authed; browser-facing)
   /graph
-    page.tsx          — Server Component: fetches all indexes + note titles; passes data to GraphCanvas
-    GraphCanvas.tsx   — Client Component: force-directed graph, filters, sidebar, sign-out
-    login/page.tsx    — Password form for browser session login
-    types.ts          — GraphNode, GraphLink, GraphData types
+    page.tsx - Server Component: fetches all indexes + note titles; passes data to GraphCanvas
+    GraphCanvas.tsx - Client Component: force-directed graph, filters, sidebar, sign-out
+    login/page.tsx - Password form for browser session login
+    types.ts - GraphNode, GraphLink, GraphData types
 
 /src
   auth.ts
@@ -72,7 +72,7 @@ Contains:
   snapshot.ts
   tension.ts
 
-middleware.ts          — Edge Runtime; protects /graph/* with session cookie check
+middleware.ts - Edge Runtime; protects /graph/* with session cookie check
 
 /types
   cluster.ts
@@ -87,7 +87,7 @@ middleware.ts          — Edge Runtime; protects /graph/* with session cookie c
   tension.ts
 
 /.github/workflows
-  nightly-passes.yml  — link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot at 3 AM UTC
+  nightly-passes.yml - link-pass → cluster-pass → tension-pass → [decay-pass ∥ exploration-pass] → snapshot at 3 AM UTC
 
 Docs/Plan.md
 Docs/Priorities.md
@@ -243,7 +243,7 @@ Input: `{ "suggestions": [{ "noteId", "type", "suggestion", "reason", "relatedNo
 Accepts advisory refinement suggestions from a local LLM agent.
 Validates types (`retitle`, `split`, `merge-suggest`, `update`).
 Upserts into refinements.json by `${noteId}:${type}` key (one suggestion per note per type).
-Suggestions only — SlipBox never modifies user notes automatically.
+Suggestions only - SlipBox never modifies user notes automatically.
 Output: `{ "updated", "total" }`
 
 ---
@@ -274,7 +274,7 @@ Output: `{ "snapshots", "snapshotCount", "since"? }`
 
 ## POST /api/exploration-pass
 
-Detects four structural gap types — orphan notes (zero backlinks), close cluster pairs
+Detects four structural gap types - orphan notes (zero backlinks), close cluster pairs
 (centroid similarity above threshold), structural holes (clusters with no external typed
 relations), and meta-note-missing (clusters with no meta-typed member note).
 No LLM calls. Commits explorations.json.
@@ -391,7 +391,7 @@ Used by ChatGPT actions, GitHub Actions nightly workflow, and local LLM agents.
 **Browser UI authentication** (`SLIPBOX_UI_PASSWORD` + `SESSION_SECRET`):
 Password form at `/graph/login`. On success, an HMAC-SHA-256 session token is set as an
 `httpOnly`, `Secure`, `SameSite=Strict` cookie (30-day expiry). Middleware verifies the
-cookie for all `/graph/*` routes. The `SLIPBOX_API_KEY` is never exposed to the browser —
+cookie for all `/graph/*` routes. The `SLIPBOX_API_KEY` is never exposed to the browser - 
 the graph page fetches data server-side and passes it down as props.
 
 Optional future:

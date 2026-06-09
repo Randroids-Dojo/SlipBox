@@ -1,5 +1,5 @@
 /**
- * GitHub integration — read/write PrivateBox files via the GitHub Contents API.
+ * GitHub integration - read/write PrivateBox files via the GitHub Contents API.
  *
  * All persistence goes through this module. GitHub acts as the database:
  * notes are markdown files, and indexes (embeddings.json, backlinks.json)
@@ -52,7 +52,7 @@ import {
 
 /**
  * Thrown when GitHub returns 409 Conflict, meaning the SHA provided to a PUT
- * was stale — another write happened between the read and write.
+ * was stale - another write happened between the read and write.
  */
 export class GitHubConflictError extends Error {
   constructor(path: string) {

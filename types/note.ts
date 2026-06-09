@@ -10,8 +10,8 @@ export type NoteId = string;
 /**
  * Semantic type of a note. Omitted for regular atomic notes.
  *
- * - `meta`       — AI-generated cluster summary (Phase 3)
- * - `hypothesis` — AI-generated research hypothesis from a tension (Phase 4)
+ * - `meta` - AI-generated cluster summary (Phase 3)
+ * - `hypothesis` - AI-generated research hypothesis from a tension (Phase 4)
  */
 /** All valid note types, useful for validation. */
 export const NOTE_TYPES = ["meta", "hypothesis"] as const;

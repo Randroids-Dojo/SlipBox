@@ -1,7 +1,7 @@
 /**
  * Relation types for the SlipBox semantic engine.
  *
- * Relations are typed semantic edges between notes — a richer layer on top
+ * Relations are typed semantic edges between notes - a richer layer on top
  * of the similarity-based backlinks. They are classified by a local LLM
  * agent via the GET /api/link-data → POST /api/relations pipeline.
  *

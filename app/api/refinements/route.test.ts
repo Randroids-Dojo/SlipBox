@@ -104,7 +104,7 @@ describe("POST /api/refinements", () => {
           {
             noteId: NOTE_B,
             type: "merge-suggest",
-            suggestion: "Merge with Note A — both discuss agent decision-making.",
+            suggestion: "Merge with Note A - both discuss agent decision-making.",
             reason: "High semantic overlap.",
             relatedNoteIds: [NOTE_A],
           },

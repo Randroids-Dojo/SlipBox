@@ -64,7 +64,7 @@ export function verifyAuth(req: NextRequest): AuthResult {
  *
  * Usage:
  *   export const GET = withAuth(async (request) => {
- *     // handler body — no auth check or try/catch needed
+ *     // handler body - no auth check or try/catch needed
  *     return NextResponse.json({ ... });
  *   });
  */

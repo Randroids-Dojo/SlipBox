@@ -6,7 +6,7 @@
  * graph over time.
  *
  * Query parameters:
- *   ?since=ISO-DATE  — filter snapshots to those captured on or after this date
+ *   ?since=ISO-DATE - filter snapshots to those captured on or after this date
  *
  * Response shape:
  *   { snapshots, snapshotCount, since? }

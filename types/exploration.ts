@@ -13,10 +13,10 @@ import type { NoteId } from "./note";
 /**
  * The four structural gap types detected by the exploration pass.
  *
- * - `orphan-note`         — a note with zero backlinks
- * - `close-clusters`      — two clusters whose centroids are very similar (merge candidate)
- * - `structural-hole`     — a cluster with no typed relations to any note outside the cluster
- * - `meta-note-missing`   — a cluster where no member note has `type: meta` in frontmatter
+ * - `orphan-note` - a note with zero backlinks
+ * - `close-clusters` - two clusters whose centroids are very similar (merge candidate)
+ * - `structural-hole` - a cluster with no typed relations to any note outside the cluster
+ * - `meta-note-missing` - a cluster where no member note has `type: meta` in frontmatter
  */
 /** All valid exploration suggestion types. */
 export const EXPLORATION_SUGGESTION_TYPES = [

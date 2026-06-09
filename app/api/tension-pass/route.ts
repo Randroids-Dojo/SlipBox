@@ -1,7 +1,7 @@
 /**
  * POST /api/tension-pass
  *
- * Detects semantic tensions — pairs of notes within the same cluster
+ * Detects semantic tensions - pairs of notes within the same cluster
  * whose embeddings diverge significantly. Fetches embeddings and clusters
  * from PrivateBox, runs tension detection, and commits the resulting
  * tensions index (tensions.json) back to PrivateBox.

@@ -5,7 +5,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import type { GraphNode, GraphLink, GraphData } from "./types";
 import type { RelationType } from "@/types/relation";
 
-// ForceGraph2D accesses window at module load — must be client-only.
+// ForceGraph2D accesses window at module load - must be client-only.
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
   loading: () => <p style={{ padding: 16, background: "#0f172a", color: "#e2e8f0", margin: 0, height: "100%" }}>Loading graph…</p>,
@@ -502,7 +502,7 @@ interface GlossaryEntry {
 const GLOSSARY: GlossaryEntry[] = [
   {
     term: "Note",
-    def: "An atomic idea — one focused thought. Each dot in the graph is a note.",
+    def: "An atomic idea - one focused thought. Each dot in the graph is a note.",
   },
   {
     term: "Link",
@@ -510,7 +510,7 @@ const GLOSSARY: GlossaryEntry[] = [
   },
   {
     term: "Tension",
-    def: "A dashed edge between two notes that sit in the same cluster yet are unusually dissimilar — same theme, divergent direction. It flags a pair worth a closer look (a possible contradiction or an under-drawn distinction). Low similarity means topical distance, not a proven contradiction. Toggle with “Tensions (dashed).”",
+    def: "A dashed edge between two notes that sit in the same cluster yet are unusually dissimilar - same theme, divergent direction. It flags a pair worth a closer look (a possible contradiction or an under-drawn distinction). Low similarity means topical distance, not a proven contradiction. Toggle with “Tensions (dashed).”",
   },
   {
     term: "Cluster",
@@ -530,7 +530,7 @@ const GLOSSARY: GlossaryEntry[] = [
   },
   {
     term: "Node size",
-    def: "Proportional to how many links a note has — bigger dots are more connected.",
+    def: "Proportional to how many links a note has - bigger dots are more connected.",
   },
 ];
 
@@ -585,7 +585,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
           }}
         >
           <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600 }}>
-            SlipBox Graph — Help
+            SlipBox Graph - Help
           </h2>
           <button
             onClick={onClose}
@@ -613,7 +613,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
 
         {/* Edge colors */}
         <h3 style={{ fontSize: "0.95rem", fontWeight: 600, margin: "20px 0 8px" }}>
-          Edge colors — relation types
+          Edge colors - relation types
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {(Object.entries(RELATION_GLOSSARY) as [RelationType, string][]).map(
@@ -630,7 +630,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
                   }}
                 />
                 <span>
-                  <strong>{type}</strong> — {def}
+                  <strong>{type}</strong> - {def}
                 </span>
               </div>
             ),
@@ -647,7 +647,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
               }}
             />
             <span>
-              <strong>unclassified</strong> — a link that exists but has no
+              <strong>unclassified</strong> - a link that exists but has no
               relation type assigned yet.
             </span>
           </div>

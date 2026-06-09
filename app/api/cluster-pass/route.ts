@@ -34,7 +34,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       requestedK = body.k;
     }
   } catch {
-    // Empty body is fine — k will be chosen automatically
+    // Empty body is fine - k will be chosen automatically
   }
 
   // 1. Fetch current embeddings and existing clusters

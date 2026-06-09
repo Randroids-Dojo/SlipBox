@@ -65,7 +65,7 @@ describe("detectTensions", () => {
   });
 
   it("detects tension between orthogonal vectors in same cluster", () => {
-    // cosine similarity of [1,0] and [0,1] is 0.0 — well below any threshold
+    // cosine similarity of [1,0] and [0,1] is 0.0 - well below any threshold
     const emb = makeEmbeddings({
       "note-a": [1, 0],
       "note-b": [0, 1],
@@ -86,7 +86,7 @@ describe("detectTensions", () => {
   });
 
   it("does not flag aligned vectors as tension", () => {
-    // cosine similarity of [1,0,0] and [1,0.01,0] is ~0.99995 — very aligned
+    // cosine similarity of [1,0,0] and [1,0.01,0] is ~0.99995 - very aligned
     const emb = makeEmbeddings({
       "note-a": [1, 0, 0],
       "note-b": [1, 0.01, 0],

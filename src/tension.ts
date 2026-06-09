@@ -1,11 +1,11 @@
 /**
- * Tension detection module — find divergent note pairs within clusters.
+ * Tension detection module - find divergent note pairs within clusters.
  *
  * Pure math, no external dependencies. Scans each semantic cluster for
  * pairs of notes whose embeddings are dissimilar enough to suggest a
  * conceptual conflict. Two notes in the same cluster share a topic; if
  * their cosine similarity is below the tension threshold they are
- * pulling in different directions within that topic — a tension worth
+ * pulling in different directions within that topic - a tension worth
  * surfacing.
  */
 
@@ -24,7 +24,7 @@ import { TENSION_THRESHOLD } from "./config";
  *
  * For each cluster with 2+ notes, computes pairwise cosine similarity
  * between all members. Pairs whose similarity falls below the tension
- * threshold are flagged — they share a topic (same cluster) but diverge
+ * threshold are flagged - they share a topic (same cluster) but diverge
  * semantically.
  *
  * @param embeddingsIndex  - The full embeddings index from PrivateBox.

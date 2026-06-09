@@ -29,7 +29,7 @@ export default function LoginPage() {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Login failed");
     } catch {
-      setError("Network error — please try again");
+      setError("Network error - please try again");
     }
 
     setLoading(false);

@@ -6,10 +6,10 @@
  * refinement suggestions (retitle, split, merge-suggest, update) and submits
  * them back via POST /api/refinements.
  *
- * Suggestions only — SlipBox never modifies user notes automatically.
+ * Suggestions only - SlipBox never modifies user notes automatically.
  *
  * Query parameters:
- *   ?clusterId=X  — restrict response to a single cluster
+ *   ?clusterId=X - restrict response to a single cluster
  */
 
 import { NextRequest, NextResponse } from "next/server";

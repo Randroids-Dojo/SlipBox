@@ -12,7 +12,7 @@ import type { EmbeddingVector } from "./embedding";
 export interface Cluster {
   /** Unique cluster identifier (e.g. "cluster-0"). */
   id: string;
-  /** Centroid vector — the mean embedding of all notes in this cluster. */
+  /** Centroid vector - the mean embedding of all notes in this cluster. */
   centroid: EmbeddingVector;
   /** IDs of the notes assigned to this cluster. */
   noteIds: NoteId[];

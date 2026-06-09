@@ -1,5 +1,5 @@
 /**
- * Graph module — bidirectional backlink management and serialization.
+ * Graph module - bidirectional backlink management and serialization.
  *
  * Manages the backlinks index: a bidirectional adjacency list where
  * each link between two notes is recorded on both sides. Links are

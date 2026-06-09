@@ -60,12 +60,12 @@ describe("POST /api/add-note", () => {
   it("creates a note with no prior notes (bootstrapping)", async () => {
     // The pipeline will:
     // 1. Call OpenAI for embedding
-    // 2. Read embeddings.json (404 → empty) — similarity pass
+    // 2. Read embeddings.json (404 → empty) - similarity pass
     // 3. Write note file          ─┐ concurrent
     // 4. Read backlinks.json       ├ (note PUT fires first, then backlinks GET)
     // 5. Write backlinks.json     ─┘
-    // 6. Read embeddings.json (404 → empty) — upsert re-fetch
-    // 7. Write embeddings.json — upsert write
+    // 6. Read embeddings.json (404 → empty) - upsert re-fetch
+    // 7. Write embeddings.json - upsert write
 
     fetchSpy.spy
       // 1. OpenAI embedding call
@@ -150,7 +150,7 @@ describe("POST /api/add-note", () => {
     fetchSpy.spy
       // 1. OpenAI embedding
       .mockResolvedValueOnce(fakeOpenAIEmbeddingResponse())
-      // 2. Read embeddings.json (has existing note) — similarity pass
+      // 2. Read embeddings.json (has existing note) - similarity pass
       .mockResolvedValueOnce(
         fakeGitHubContents(JSON.stringify(existingEmbeddings), "emb-sha"),
       )

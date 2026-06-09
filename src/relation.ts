@@ -1,11 +1,11 @@
 /**
- * Relation module — manage typed semantic edges between notes.
+ * Relation module - manage typed semantic edges between notes.
  *
  * Relations sit on top of similarity-based backlinks and carry LLM-annotated
  * semantic types. This module handles canonical key derivation, upserts,
  * filtering by note, and serialization.
  *
- * Pure logic — no external dependencies, no I/O.
+ * Pure logic - no external dependencies, no I/O.
  */
 
 import type { NoteId, RelationType, TypedLink, RelationsIndex } from "@/types";

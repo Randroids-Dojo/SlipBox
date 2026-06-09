@@ -47,10 +47,10 @@ const emptyBacklinks = makeBacklinks({});
 const emptyClusters = makeClusters({});
 
 // ---------------------------------------------------------------------------
-// computeDecay — no-links signal
+// computeDecay - no-links signal
 // ---------------------------------------------------------------------------
 
-describe("computeDecay — no-links", () => {
+describe("computeDecay - no-links", () => {
   it("flags note with zero backlinks with no-links reason", () => {
     const emb = makeEmbeddings({ "note-a": [1, 0] });
     const result = computeDecay(emb, emptyBacklinks, emptyClusters, 0.7, 0);
@@ -76,10 +76,10 @@ describe("computeDecay — no-links", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeDecay — low-link-density signal
+// computeDecay - low-link-density signal
 // ---------------------------------------------------------------------------
 
-describe("computeDecay — low-link-density", () => {
+describe("computeDecay - low-link-density", () => {
   it("flags note with 1 backlink with low-link-density reason", () => {
     const emb = makeEmbeddings({ "note-a": [1, 0] });
     const bl = makeBacklinks({ "note-a": ["note-b"] });
@@ -118,10 +118,10 @@ describe("computeDecay — low-link-density", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeDecay — cluster-outlier signal
+// computeDecay - cluster-outlier signal
 // ---------------------------------------------------------------------------
 
-describe("computeDecay — cluster-outlier", () => {
+describe("computeDecay - cluster-outlier", () => {
   it("flags note whose similarity to centroid is below threshold", () => {
     // [1,0] vs centroid [0,1] → cosine sim = 0.0, below threshold 0.7
     const emb = makeEmbeddings({ "note-a": [1, 0] });
@@ -181,10 +181,10 @@ describe("computeDecay — cluster-outlier", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeDecay — no-cluster signal
+// computeDecay - no-cluster signal
 // ---------------------------------------------------------------------------
 
-describe("computeDecay — no-cluster", () => {
+describe("computeDecay - no-cluster", () => {
   it("flags note not present in any cluster with no-cluster reason", () => {
     const emb = makeEmbeddings({ "note-a": [1, 0] });
     const bl = makeBacklinks({ "note-a": ["b", "c"] });
@@ -215,10 +215,10 @@ describe("computeDecay — no-cluster", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeDecay — score capping and thresholding
+// computeDecay - score capping and thresholding
 // ---------------------------------------------------------------------------
 
-describe("computeDecay — score cap and threshold", () => {
+describe("computeDecay - score cap and threshold", () => {
   it("cluster-outlier and no-cluster are mutually exclusive", () => {
     // cluster-outlier requires being in a cluster; no-cluster means not in one
     // A note cannot receive both penalties
@@ -291,10 +291,10 @@ describe("computeDecay — score cap and threshold", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeDecay — multi-note and general behavior
+// computeDecay - multi-note and general behavior
 // ---------------------------------------------------------------------------
 
-describe("computeDecay — general", () => {
+describe("computeDecay - general", () => {
   it("returns empty records when embeddings index is empty", () => {
     const emb = makeEmbeddings({});
     const result = computeDecay(emb, emptyBacklinks, emptyClusters, 0.7, 0.3);

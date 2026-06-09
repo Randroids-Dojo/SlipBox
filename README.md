@@ -4,7 +4,7 @@ A Zettelkasten-style semantic thinking engine. Captures atomic ideas, embeds the
 
 **The engine is public. The knowledge is private.**
 
-SlipBox runs on Vercel and reads/writes to a user-owned private GitHub repository (PrivateBox). No database — GitHub is the database.
+SlipBox runs on Vercel and reads/writes to a user-owned private GitHub repository (PrivateBox). No database - GitHub is the database.
 
 ---
 
@@ -30,10 +30,10 @@ All endpoints require `Authorization: Bearer <SLIPBOX_API_KEY>`.
 Add a new atomic note. Runs the full pipeline: normalize → embed → similarity pass → link → commit.
 
 ```json
-// Request — atomic note
+// Request - atomic note
 { "content": "Agents shine when ambiguity exists." }
 
-// Request — meta-note (AI-generated cluster summary)
+// Request - meta-note (AI-generated cluster summary)
 { "content": "## Cluster: Agentic Systems\n\n...", "type": "meta" }
 
 // Response
@@ -51,13 +51,13 @@ Recomputes all similarity links across the full embeddings index and rebuilds `b
 Clusters the embedding space using k-means and commits `clusters.json` to PrivateBox.
 
 ```json
-// Optional body — override automatic cluster count
+// Optional body - override automatic cluster count
 { "k": 5 }
 ```
 
 ### `POST /api/tension-pass`
 
-Detects semantic tensions — pairs of notes within the same cluster whose embeddings diverge significantly. Commits `tensions.json`. Requires a current clusters index (run cluster-pass first).
+Detects semantic tensions - pairs of notes within the same cluster whose embeddings diverge significantly. Commits `tensions.json`. Requires a current clusters index (run cluster-pass first).
 
 ### `POST /api/decay-pass`
 
@@ -86,7 +86,7 @@ Staleness signals (additive, capped at 1.0):
 
 ### `GET /api/theme-data`
 
-Returns everything a local LLM agent needs to synthesize meta-notes: cluster assignments, full note content (title + body), and detected tensions. No embeddings — only human-readable content.
+Returns everything a local LLM agent needs to synthesize meta-notes: cluster assignments, full note content (title + body), and detected tensions. No embeddings - only human-readable content.
 
 ```json
 {
@@ -187,7 +187,7 @@ Required GitHub Actions secrets:
 
 SlipBox only uses the embeddings endpoint (`POST /v1/embeddings`). Minimum required permissions for a restricted key:
 
-- **Model capabilities**: `Request` (the parent toggle — this grants `model.request`)
+- **Model capabilities**: `Request` (the parent toggle - this grants `model.request`)
   - Individual child endpoints can be left at their defaults
 
 All other sections (Assistants, Threads, Files, etc.) can remain `None`.

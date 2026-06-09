@@ -1,5 +1,5 @@
 /**
- * Similarity module — cosine similarity and threshold-based match finding.
+ * Similarity module - cosine similarity and threshold-based match finding.
  *
  * Pure math, no external dependencies. Given two vectors, computes their
  * cosine similarity. Given a target embedding and an index, returns ranked

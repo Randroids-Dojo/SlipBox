@@ -1,15 +1,15 @@
 /**
- * Decay detection module — identify stale or under-connected notes.
+ * Decay detection module - identify stale or under-connected notes.
  *
  * Pure math, no external dependencies. Scores each note on four
  * independent staleness signals and produces a DecayIndex with
  * notes whose scores meet the configured threshold.
  *
  * Scoring components (additive, capped at 1.0):
- *   +0.4  no-links          — zero backlinks
- *   +0.2  low-link-density  — fewer than 2 backlinks
- *   +0.3  cluster-outlier   — cosine similarity to cluster centroid < threshold
- *   +0.1  no-cluster        — note not present in any cluster
+ *   +0.4  no-links - zero backlinks
+ *   +0.2  low-link-density - fewer than 2 backlinks
+ *   +0.3  cluster-outlier - cosine similarity to cluster centroid < threshold
+ *   +0.1  no-cluster - note not present in any cluster
  */
 
 import type { EmbeddingsIndex } from "@/types";

@@ -2,7 +2,7 @@
  * Tension types for the SlipBox semantic engine.
  *
  * Tensions represent pairs of notes within the same semantic cluster
- * that diverge significantly — they share a topic but pull in different
+ * that diverge significantly - they share a topic but pull in different
  * directions. These surface potential contradictions or unresolved
  * conceptual conflicts worth examining.
  *
