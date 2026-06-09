@@ -339,7 +339,12 @@ interface EmbeddingProvider {
 Cosine similarity.
 
 Threshold (default):
-0.82
+0.50
+
+Calibrated for `text-embedding-3-large`: related-but-distinct atomic notes
+score roughly 0.30–0.60 (median ~0.33, max ~0.71 on a real 45-note graph).
+The earlier 0.82 default sat above the observed maximum and produced almost
+no links. Override via the `SIMILARITY_THRESHOLD` env var.
 
 When similarity exceeds threshold:
 - Add forward link

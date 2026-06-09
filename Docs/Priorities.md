@@ -41,7 +41,7 @@ Define the data shapes everything else builds on.
 
 Centralize tunables so nothing is hardcoded in logic.
 
-- [x] `src/config.ts` — Similarity threshold (0.82), embedding model name, PrivateBox repo coordinates, GitHub API base URL
+- [x] `src/config.ts` — Similarity threshold (0.50, calibrated for text-embedding-3-large), embedding model name, PrivateBox repo coordinates, GitHub API base URL
 
 **Done when:** Config values are importable and overridable via env vars.
 

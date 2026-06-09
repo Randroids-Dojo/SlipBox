@@ -92,10 +92,20 @@ export function getOpenAIApiKey(): string {
 // Similarity
 // ---------------------------------------------------------------------------
 
-/** Minimum cosine-similarity score required to create a link between notes. */
+/**
+ * Minimum cosine-similarity score required to create a link between notes.
+ *
+ * Calibrated for `text-embedding-3-large`, whose cosine similarities for
+ * genuinely related-but-distinct atomic notes land roughly in the 0.30–0.60
+ * range (median ~0.33, max ~0.71 measured across a real 45-note graph).
+ * The original 0.82 default was an uncalibrated guess that sat *above* the
+ * observed maximum, so almost no links were ever created. 0.50 links the
+ * strongest ~10–15% of related pairs — meaningful connections without a
+ * hairball. Override via the SIMILARITY_THRESHOLD env var.
+ */
 export const SIMILARITY_THRESHOLD = optionalNumericEnv(
   "SIMILARITY_THRESHOLD",
-  0.82,
+  0.5,
 );
 
 // ---------------------------------------------------------------------------
@@ -188,10 +198,20 @@ export const TENSIONS_INDEX_PATH = optionalEnv(
  * Maximum cosine similarity between two notes in the same cluster for
  * them to be flagged as a tension. Pairs above this are considered
  * aligned; pairs below are divergent enough to warrant attention.
+ *
+ * Calibrated for `text-embedding-3-large`. Because in-cluster pairs already
+ * have a median cosine similarity around 0.33, the original 0.72 default
+ * flagged ~99% of every cluster as "tension" (252 of 252 pairs in a real
+ * graph) — pure noise. 0.20 surfaces only the genuinely divergent tail
+ * (~5–10% of in-cluster pairs). Override via the TENSION_THRESHOLD env var.
+ *
+ * NOTE: low cosine similarity indicates *topical distance*, not logical
+ * contradiction. This heuristic surfaces candidates worth a human look, not
+ * confirmed contradictions; a future pass should confirm tensions with an LLM.
  */
 export const TENSION_THRESHOLD = optionalNumericEnv(
   "TENSION_THRESHOLD",
-  0.72,
+  0.2,
 );
 
 /** Minimum number of notes required to run tension detection. */
