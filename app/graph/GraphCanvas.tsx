@@ -91,6 +91,9 @@ export default function GraphCanvas({ data }: Props) {
   const [showMetaNotes, setShowMetaNotes] = useState(true);
   const [showTensions, setShowTensions] = useState(true);
 
+  // Help overlay
+  const [showHelp, setShowHelp] = useState(false);
+
   // Sidebar state
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [noteDetail, setNoteDetail] = useState<NoteDetail | null>(null);
@@ -315,6 +318,36 @@ export default function GraphCanvas({ data }: Props) {
           />
         )}
       </div>
+
+      {/* Help FAB */}
+      <button
+        onClick={() => setShowHelp(true)}
+        aria-label="Help and glossary"
+        title="Help & glossary"
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          width: 48,
+          height: 48,
+          borderRadius: "50%",
+          background: CLUSTER_COLORS[0],
+          color: "#fff",
+          border: "none",
+          fontSize: "1.4rem",
+          fontWeight: 700,
+          cursor: "pointer",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 50,
+        }}
+      >
+        ?
+      </button>
+
+      {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
@@ -442,6 +475,199 @@ function Sidebar({ node, detail, loading, clusterColorMap, onClose }: SidebarPro
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Help overlay
+// ---------------------------------------------------------------------------
+
+/** Relation-type definitions, shown with their edge colors. */
+const RELATION_GLOSSARY: Record<RelationType, string> = {
+  supports: "Note A gives evidence or reasoning that strengthens note B.",
+  contradicts: "The two notes make conflicting claims.",
+  refines: "Note A adds precision or nuance to the idea in note B.",
+  "is-example-of": "Note A is a concrete instance of the concept in note B.",
+  "contrasts-with":
+    "The two notes highlight different aspects of the same topic.",
+};
+
+interface GlossaryEntry {
+  term: string;
+  swatch?: string;
+  def: string;
+}
+
+const GLOSSARY: GlossaryEntry[] = [
+  {
+    term: "Note",
+    def: "An atomic idea — one focused thought. Each dot in the graph is a note.",
+  },
+  {
+    term: "Link",
+    def: "An edge between two notes whose meanings are similar (cosine similarity of their embeddings above a threshold). Links are computed automatically, not drawn by hand.",
+  },
+  {
+    term: "Tension",
+    def: "A dashed edge between two notes that sit in the same cluster yet are unusually dissimilar — same theme, divergent direction. It flags a pair worth a closer look (a possible contradiction or an under-drawn distinction). Low similarity means topical distance, not a proven contradiction. Toggle with “Tensions (dashed).”",
+  },
+  {
+    term: "Cluster",
+    def: "A thematic group of notes discovered by k-means on their embeddings. A note's color shows which cluster it belongs to; filter to one cluster with the dropdown.",
+  },
+  {
+    term: "Meta note",
+    def: "An AI-generated synthesis note that summarizes a whole cluster's theme. Toggle with the “Meta notes” checkbox.",
+  },
+  {
+    term: "Decay",
+    def: "A staleness score from 0–1 flagging notes that may be neglected: no links, low link density, or sitting far from their cluster's center (an outlier). Higher decay fades a note's color toward gray.",
+  },
+  {
+    term: "Refinement suggestion",
+    def: "Advisory, non-destructive recommendations (e.g. retitle, split, merge) shown in a note's sidebar. SlipBox never edits your notes automatically.",
+  },
+  {
+    term: "Node size",
+    def: "Proportional to how many links a note has — bigger dots are more connected.",
+  },
+];
+
+function HelpOverlay({ onClose }: { onClose: () => void }) {
+  // Close on Escape.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+        padding: 16,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Help and glossary"
+        style={{
+          width: "min(640px, 100%)",
+          maxHeight: "85vh",
+          overflowY: "auto",
+          background: DARK.sidebar,
+          border: `1px solid ${DARK.border}`,
+          borderRadius: 10,
+          padding: 24,
+          color: DARK.text,
+          boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 8,
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600 }}>
+            SlipBox Graph — Help
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Close help"
+            style={{
+              fontSize: "1.3rem",
+              lineHeight: 1,
+              padding: "0 4px",
+              background: "transparent",
+              color: DARK.faint,
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <p style={{ fontSize: "0.85rem", color: DARK.faint, marginTop: 0, lineHeight: 1.5 }}>
+          This is your knowledge graph: every dot is an atomic note, every edge
+          a discovered relationship. Click a node to read it and see its cluster,
+          decay, and suggestions. Use the toolbar to filter by cluster or toggle
+          meta notes and tensions.
+        </p>
+
+        {/* Edge colors */}
+        <h3 style={{ fontSize: "0.95rem", fontWeight: 600, margin: "20px 0 8px" }}>
+          Edge colors — relation types
+        </h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {(Object.entries(RELATION_GLOSSARY) as [RelationType, string][]).map(
+            ([type, def]) => (
+              <div key={type} style={{ display: "flex", gap: 8, fontSize: "0.82rem", lineHeight: 1.45 }}>
+                <span
+                  style={{
+                    width: 12,
+                    height: 12,
+                    flexShrink: 0,
+                    marginTop: 3,
+                    background: RELATION_COLORS[type],
+                    borderRadius: 2,
+                  }}
+                />
+                <span>
+                  <strong>{type}</strong> — {def}
+                </span>
+              </div>
+            ),
+          )}
+          <div style={{ display: "flex", gap: 8, fontSize: "0.82rem", lineHeight: 1.45 }}>
+            <span
+              style={{
+                width: 12,
+                height: 12,
+                flexShrink: 0,
+                marginTop: 3,
+                background: UNCLASSIFIED_EDGE_COLOR,
+                borderRadius: 2,
+              }}
+            />
+            <span>
+              <strong>unclassified</strong> — a link that exists but has no
+              relation type assigned yet.
+            </span>
+          </div>
+        </div>
+
+        {/* Glossary */}
+        <h3 style={{ fontSize: "0.95rem", fontWeight: 600, margin: "20px 0 8px" }}>
+          Glossary
+        </h3>
+        <dl style={{ margin: 0 }}>
+          {GLOSSARY.map((g) => (
+            <div key={g.term} style={{ marginBottom: 12 }}>
+              <dt style={{ fontWeight: 600, fontSize: "0.85rem" }}>{g.term}</dt>
+              <dd style={{ margin: "2px 0 0", fontSize: "0.82rem", color: DARK.faint, lineHeight: 1.5 }}>
+                {g.def}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </div>
   );
 }
