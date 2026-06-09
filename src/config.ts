@@ -276,10 +276,17 @@ export const SNAPSHOTS_INDEX_PATH = optionalEnv(
 /**
  * Maximum cosine similarity between a note and its cluster centroid before
  * the note is considered a cluster outlier and receives a decay penalty.
+ *
+ * Calibrated for `text-embedding-3-large`. Note-to-centroid similarities run
+ * a median of ~0.67 (min ~0.47, max ~0.86 on a real 47-note graph), so the
+ * original 0.70 default flagged ~66% of all notes as outliers — inflating the
+ * decay index with false positives. 0.50 flags only the genuine low tail
+ * (notes that barely belong to their own cluster). Override via the
+ * CLUSTER_OUTLIER_THRESHOLD env var.
  */
 export const CLUSTER_OUTLIER_THRESHOLD = optionalNumericEnv(
   "CLUSTER_OUTLIER_THRESHOLD",
-  0.70,
+  0.5,
 );
 
 /**
@@ -304,8 +311,15 @@ export const EXPLORATIONS_INDEX_PATH = optionalEnv(
 /**
  * Minimum cosine similarity between two cluster centroids for them to be
  * flagged as a `close-clusters` merge candidate.
+ *
+ * Calibrated for `text-embedding-3-large`. Centroid-to-centroid similarities
+ * top out around 0.74 (a real graph's closest cluster pair), so the original
+ * 0.85 default could never fire — close-cluster detection was effectively dead.
+ * 0.70 surfaces genuinely adjacent clusters (the closest pair sits well above
+ * the ~0.55 baseline) as merge candidates. Override via the
+ * CLOSE_CLUSTER_THRESHOLD env var.
  */
 export const CLOSE_CLUSTER_THRESHOLD = optionalNumericEnv(
   "CLOSE_CLUSTER_THRESHOLD",
-  0.85,
+  0.7,
 );
