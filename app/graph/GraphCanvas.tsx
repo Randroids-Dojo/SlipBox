@@ -1,9 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import type { GraphNode, GraphLink, GraphData } from "./types";
 import type { RelationType } from "@/types/relation";
+import { NOTE_TYPES } from "@/types";
 
 // ForceGraph2D accesses window at module load - must be client-only.
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
@@ -80,6 +82,7 @@ interface Props {
 
 export default function GraphCanvas({ data }: Props) {
   const { clusterIds } = data;
+  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const pendingNodeId = useRef<string | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -91,8 +94,45 @@ export default function GraphCanvas({ data }: Props) {
   const [showMetaNotes, setShowMetaNotes] = useState(true);
   const [showTensions, setShowTensions] = useState(true);
 
-  // Help overlay
+  // Overlays
   const [showHelp, setShowHelp] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+
+  // Action state: name of the action currently running (null when idle).
+  const [running, setRunning] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
+
+  // POST an action to the session-authed dispatcher, then refresh the graph.
+  const runAction = useCallback(
+    async (action: string, extra?: Record<string, unknown>) => {
+      setRunning(action);
+      setFeedback(null);
+      try {
+        const res = await fetch("/api/graph/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, ...extra }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setFeedback({ ok: false, text: json.error ?? "Action failed" });
+          return false;
+        }
+        setFeedback({ ok: true, text: summarize(action, json.result) });
+        // Re-run the force-dynamic server component to repaint the graph.
+        router.refresh();
+        return true;
+      } catch {
+        setFeedback({ ok: false, text: "Network error" });
+        return false;
+      } finally {
+        setRunning(null);
+      }
+    },
+    [router],
+  );
 
   // Sidebar state
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
@@ -107,6 +147,13 @@ export default function GraphCanvas({ data }: Props) {
     setNoteDetail(null);
     setLoadingNote(false);
   }, [showMetaNotes, selectedClusterId]);
+
+  // A cluster-pass can rename clusters; drop a filter that no longer exists.
+  useEffect(() => {
+    if (selectedClusterId && !clusterIds.includes(selectedClusterId)) {
+      setSelectedClusterId(null);
+    }
+  }, [clusterIds, selectedClusterId]);
 
   // Track container dimensions.
   useEffect(() => {
@@ -283,8 +330,15 @@ export default function GraphCanvas({ data }: Props) {
         </div>
 
         <button
+          onClick={() => setShowActions(true)}
+          style={{ marginLeft: "auto", fontSize: "0.85rem", background: CLUSTER_COLORS[0], color: "#fff", border: "none", borderRadius: 4, padding: "3px 10px", cursor: "pointer" }}
+        >
+          Actions
+        </button>
+
+        <button
           onClick={handleSignOut}
-          style={{ marginLeft: "auto", fontSize: "0.85rem", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer" }}
+          style={{ fontSize: "0.85rem", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer" }}
         >
           Sign out
         </button>
@@ -348,6 +402,15 @@ export default function GraphCanvas({ data }: Props) {
       </button>
 
       {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
+
+      {showActions && (
+        <ActionsDrawer
+          onClose={() => setShowActions(false)}
+          running={running}
+          feedback={feedback}
+          runAction={runAction}
+        />
+      )}
     </div>
   );
 }
@@ -667,6 +730,405 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </dl>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Actions drawer
+// ---------------------------------------------------------------------------
+
+/** Build a one-line human summary of an action result for the feedback area. */
+function summarize(action: string, result: unknown): string {
+  const r = (result ?? {}) as Record<string, unknown>;
+  const num = (k: string) => Number(r[k] ?? 0);
+  const str = (k: string) => String(r[k] ?? "");
+  switch (action) {
+    case "link-pass":
+      return `Linked ${num("notesProcessed")} notes, ${num("totalLinks")} links.`;
+    case "cluster-pass":
+      return num("clusterCount")
+        ? `${num("clusterCount")} clusters across ${num("noteCount")} notes.`
+        : str("message") || "Done.";
+    case "tension-pass":
+      return str("message").startsWith("Not enough")
+        ? str("message")
+        : `${num("tensionCount")} tensions found.`;
+    case "decay-pass":
+      return `${num("staleCount")} stale of ${num("noteCount")} notes.`;
+    case "exploration-pass":
+      return `${num("suggestionCount")} structural suggestions.`;
+    case "snapshot": {
+      const s = (r.snapshot ?? {}) as Record<string, unknown>;
+      return `Snapshot captured: ${Number(s.noteCount ?? 0)} notes, ${Number(s.linkCount ?? 0)} links.`;
+    }
+    case "add-note":
+      return `Note ${str("noteId")} added, linked to ${Array.isArray(r.linkedNotes) ? r.linkedNotes.length : 0}.`;
+    case "relations":
+      return `Relations updated: ${num("updated")} (total ${num("total")}).`;
+    case "refinements":
+      return `Refinements updated: ${num("updated")} (total ${num("total")}).`;
+    case "full-cycle": {
+      const steps = Array.isArray(r.steps)
+        ? (r.steps as Record<string, unknown>[])
+        : [];
+      const names = steps.map((s) =>
+        s.skipped ? `${String(s.name)} (skipped)` : String(s.name),
+      );
+      return `Full cycle done: ${names.join(", ")}.`;
+    }
+    default:
+      return "Done.";
+  }
+}
+
+const PASSES: { action: string; label: string }[] = [
+  { action: "link-pass", label: "Link pass" },
+  { action: "tension-pass", label: "Tension pass" },
+  { action: "decay-pass", label: "Decay pass" },
+  { action: "exploration-pass", label: "Exploration pass" },
+  { action: "snapshot", label: "Snapshot" },
+];
+
+const DATA_KINDS: { kind: string; label: string }[] = [
+  { kind: "theme", label: "Theme data" },
+  { kind: "link", label: "Link data" },
+  { kind: "hypothesis", label: "Hypothesis data" },
+  { kind: "refinement", label: "Refinement data" },
+];
+
+interface ActionsDrawerProps {
+  onClose: () => void;
+  running: string | null;
+  feedback: { ok: boolean; text: string } | null;
+  runAction: (
+    action: string,
+    extra?: Record<string, unknown>,
+  ) => Promise<boolean>;
+}
+
+function ActionsDrawer({
+  onClose,
+  running,
+  feedback,
+  runAction,
+}: ActionsDrawerProps) {
+  const [k, setK] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [noteType, setNoteType] = useState("");
+  const [confirmKey, setConfirmKey] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [relationsText, setRelationsText] = useState("");
+  const [refinementsText, setRefinementsText] = useState("");
+  const [pasteError, setPasteError] = useState<string | null>(null);
+  const [dataView, setDataView] = useState<{ label: string; json: string } | null>(
+    null,
+  );
+  const [dataLoading, setDataLoading] = useState<string | null>(null);
+
+  const busy = running !== null;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const btn = (variant: "primary" | "plain" = "plain") => ({
+    fontSize: "0.8rem",
+    background: variant === "primary" ? CLUSTER_COLORS[0] : DARK.bg,
+    color: variant === "primary" ? "#fff" : DARK.text,
+    border: variant === "primary" ? "none" : `1px solid ${DARK.border}`,
+    borderRadius: 4,
+    padding: "5px 10px",
+    cursor: busy ? "default" : "pointer",
+    opacity: busy ? 0.5 : 1,
+  });
+
+  const label = (action: string, text: string) =>
+    running === action ? "Running..." : text;
+
+  // GET read-only data and show it as JSON for copy.
+  const loadData = useCallback(async (kind: string, lbl: string) => {
+    setDataLoading(kind);
+    setDataView(null);
+    try {
+      const res = await fetch(`/api/graph/data?kind=${kind}`);
+      const json = await res.json();
+      setDataView({ label: lbl, json: JSON.stringify(json, null, 2) });
+    } catch {
+      setDataView({ label: lbl, json: "Failed to load." });
+    } finally {
+      setDataLoading(null);
+    }
+  }, []);
+
+  // Parse a paste-back textarea (array or { key: [...] }) and submit it.
+  const submitPaste = useCallback(
+    async (kind: "relations" | "refinements", text: string) => {
+      setPasteError(null);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        setPasteError("That is not valid JSON.");
+        return;
+      }
+      const arr = Array.isArray(parsed)
+        ? parsed
+        : (parsed as Record<string, unknown>)?.[kind];
+      if (!Array.isArray(arr)) {
+        setPasteError(`Paste an array, or an object with a "${kind}" array.`);
+        return;
+      }
+      await runAction(kind, { [kind]: arr });
+    },
+    [runAction],
+  );
+
+  const sectionTitle = {
+    fontSize: "0.95rem",
+    fontWeight: 600,
+    margin: "18px 0 8px",
+  } as const;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+        padding: 16,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Actions"
+        style={{
+          width: "min(560px, 100%)",
+          maxHeight: "88vh",
+          overflowY: "auto",
+          background: DARK.sidebar,
+          border: `1px solid ${DARK.border}`,
+          borderRadius: 10,
+          padding: 24,
+          color: DARK.text,
+          boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600 }}>Actions</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close actions"
+            style={{ fontSize: "1.3rem", lineHeight: 1, padding: "0 4px", background: "transparent", color: DARK.faint, border: "none", cursor: "pointer" }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Feedback */}
+        {feedback && (
+          <div
+            style={{
+              fontSize: "0.8rem",
+              padding: "8px 10px",
+              borderRadius: 4,
+              marginBottom: 8,
+              background: DARK.bg,
+              border: `1px solid ${feedback.ok ? RELATION_COLORS.supports : RELATION_COLORS.contradicts}`,
+              color: feedback.ok ? DARK.text : "#fca5a5",
+            }}
+          >
+            {feedback.text}
+          </div>
+        )}
+
+        {/* Maintenance */}
+        <h3 style={sectionTitle}>Maintenance passes</h3>
+        <p style={{ fontSize: "0.75rem", color: DARK.muted, margin: "0 0 8px" }}>
+          These recompute and commit shared index files in PrivateBox.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          {PASSES.map((p) => (
+            <button key={p.action} disabled={busy} style={btn()} onClick={() => runAction(p.action)}>
+              {label(p.action, p.label)}
+            </button>
+          ))}
+          {/* Cluster with optional k */}
+          <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <button disabled={busy} style={btn()} onClick={() => runAction("cluster-pass", k.trim() ? { k: Number(k) } : undefined)}>
+              {label("cluster-pass", "Cluster pass")}
+            </button>
+            <input
+              type="number"
+              min={2}
+              placeholder="k"
+              value={k}
+              onChange={(e) => setK(e.target.value)}
+              style={{ width: 48, fontSize: "0.8rem", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: "4px" }}
+            />
+          </span>
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          {confirmKey === "full-cycle" ? (
+            <span style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.8rem" }}>
+              <span>Run all six passes in order?</span>
+              <button disabled={busy} style={btn("primary")} onClick={() => { setConfirmKey(null); runAction("full-cycle"); }}>
+                {label("full-cycle", "Confirm")}
+              </button>
+              <button disabled={busy} style={btn()} onClick={() => setConfirmKey(null)}>Cancel</button>
+            </span>
+          ) : (
+            <button disabled={busy} style={btn("primary")} onClick={() => setConfirmKey("full-cycle")}>
+              Run full cycle
+            </button>
+          )}
+        </div>
+
+        {/* Add note */}
+        <h3 style={sectionTitle}>Add note</h3>
+        <p style={{ fontSize: "0.75rem", color: DARK.muted, margin: "0 0 8px" }}>
+          Creates a note and embeds it (uses an OpenAI embedding, a small cost).
+        </p>
+        <textarea
+          value={noteContent}
+          onChange={(e) => setNoteContent(e.target.value)}
+          placeholder="One atomic idea..."
+          rows={3}
+          style={{ width: "100%", boxSizing: "border-box", fontSize: "0.8rem", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: 8, resize: "vertical" }}
+        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+          <select
+            value={noteType}
+            onChange={(e) => setNoteType(e.target.value)}
+            style={{ fontSize: "0.8rem", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: "4px" }}
+          >
+            <option value="">type: none</option>
+            {NOTE_TYPES.map((t) => (
+              <option key={t} value={t}>type: {t}</option>
+            ))}
+          </select>
+          {confirmKey === "add-note" ? (
+            <span style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.8rem" }}>
+              <button
+                disabled={busy}
+                style={btn("primary")}
+                onClick={async () => {
+                  setConfirmKey(null);
+                  const ok = await runAction("add-note", {
+                    content: noteContent,
+                    ...(noteType ? { type: noteType } : {}),
+                  });
+                  if (ok) setNoteContent("");
+                }}
+              >
+                {label("add-note", "Confirm add")}
+              </button>
+              <button disabled={busy} style={btn()} onClick={() => setConfirmKey(null)}>Cancel</button>
+            </span>
+          ) : (
+            <button
+              disabled={busy || !noteContent.trim()}
+              style={{ ...btn(), opacity: busy || !noteContent.trim() ? 0.5 : 1 }}
+              onClick={() => setConfirmKey("add-note")}
+            >
+              Add note
+            </button>
+          )}
+        </div>
+
+        {/* Analytics */}
+        <h3 style={sectionTitle}>Analytics</h3>
+        <button disabled={!!dataLoading} style={btn()} onClick={() => loadData("analytics", "Analytics")}>
+          {dataLoading === "analytics" ? "Loading..." : "View snapshot timeline"}
+        </button>
+
+        {/* Advanced */}
+        <h3 style={sectionTitle}>
+          <button
+            onClick={() => setShowAdvanced((v) => !v)}
+            style={{ background: "transparent", border: "none", color: DARK.text, fontSize: "0.95rem", fontWeight: 600, cursor: "pointer", padding: 0 }}
+          >
+            {showAdvanced ? "▾" : "▸"} Advanced (LLM loop)
+          </button>
+        </h3>
+        {showAdvanced && (
+          <div>
+            <p style={{ fontSize: "0.75rem", color: DARK.muted, margin: "0 0 8px" }}>
+              View data to hand to an external LLM, then paste its JSON output back.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+              {DATA_KINDS.map((d) => (
+                <button key={d.kind} disabled={!!dataLoading} style={btn()} onClick={() => loadData(d.kind, d.label)}>
+                  {dataLoading === d.kind ? "Loading..." : d.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Relations paste-back */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: "0.8rem", fontWeight: 600, marginBottom: 4 }}>Submit relations</div>
+              <textarea
+                value={relationsText}
+                onChange={(e) => setRelationsText(e.target.value)}
+                placeholder='[{ "noteA": "...", "noteB": "...", "relationType": "supports", "reason": "..." }]'
+                rows={3}
+                style={{ width: "100%", boxSizing: "border-box", fontSize: "0.75rem", fontFamily: "monospace", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: 8, resize: "vertical" }}
+              />
+              <button disabled={busy || !relationsText.trim()} style={{ ...btn(), marginTop: 4, opacity: busy || !relationsText.trim() ? 0.5 : 1 }} onClick={() => submitPaste("relations", relationsText)}>
+                {label("relations", "Submit relations")}
+              </button>
+            </div>
+
+            {/* Refinements paste-back */}
+            <div style={{ marginBottom: 4 }}>
+              <div style={{ fontSize: "0.8rem", fontWeight: 600, marginBottom: 4 }}>Submit refinements</div>
+              <textarea
+                value={refinementsText}
+                onChange={(e) => setRefinementsText(e.target.value)}
+                placeholder='[{ "noteId": "...", "type": "retitle", "suggestion": "...", "reason": "..." }]'
+                rows={3}
+                style={{ width: "100%", boxSizing: "border-box", fontSize: "0.75rem", fontFamily: "monospace", background: DARK.bg, color: DARK.text, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: 8, resize: "vertical" }}
+              />
+              <button disabled={busy || !refinementsText.trim()} style={{ ...btn(), marginTop: 4, opacity: busy || !refinementsText.trim() ? 0.5 : 1 }} onClick={() => submitPaste("refinements", refinementsText)}>
+                {label("refinements", "Submit refinements")}
+              </button>
+            </div>
+
+            {pasteError && (
+              <div style={{ fontSize: "0.78rem", color: "#fca5a5", marginTop: 4 }}>{pasteError}</div>
+            )}
+          </div>
+        )}
+
+        {/* Data viewer */}
+        {dataView && (
+          <div style={{ marginTop: 14, borderTop: `1px solid ${DARK.border}`, paddingTop: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{dataView.label}</span>
+              <span style={{ display: "flex", gap: 8 }}>
+                <button style={btn()} onClick={() => navigator.clipboard?.writeText(dataView.json)}>Copy JSON</button>
+                <button style={btn()} onClick={() => setDataView(null)}>Close</button>
+              </span>
+            </div>
+            <pre style={{ margin: 0, maxHeight: 220, overflow: "auto", fontSize: "0.72rem", background: DARK.bg, border: `1px solid ${DARK.border}`, borderRadius: 4, padding: 8, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+              {dataView.json}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );

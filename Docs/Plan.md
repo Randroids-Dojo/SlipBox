@@ -307,6 +307,31 @@ Output: `{ "title"?, "type"?, "body" }`
 
 ---
 
+## POST /api/graph/action
+
+Session-cookie authenticated (browser-facing). Lets the graph UI Actions drawer
+run engine actions without the Bearer API key. Body: `{ action, k?, content?, type?,
+relations?, suggestions? }`. The `action` allowlist is link-pass, cluster-pass,
+tension-pass, decay-pass, exploration-pass, snapshot, full-cycle, add-note, relations,
+refinements. Each dispatches to the matching `src/passes.ts` function (the same code the
+Bearer routes use). Output: `{ action, result }`; validation/precondition failures map
+to 400.
+
+---
+
+## GET /api/graph/data
+
+Session-cookie authenticated (browser-facing). Read-only data for the UI's LLM-loop
+section. Query: `?kind=theme|link|hypothesis|refinement|analytics` plus pass-through
+`since`, `clusterId`, `unclassifiedOnly`. Returns the same payloads as the Bearer
+`*-data` and analytics routes.
+
+Both browser endpoints share their engine logic with the Bearer routes via
+`src/passes.ts`, so responses stay identical. The Bearer routes remain for the nightly
+GitHub Actions cron.
+
+---
+
 ## GET /graph
 
 Auth-gated browser page. Server Component: fetches all indexes and note titles

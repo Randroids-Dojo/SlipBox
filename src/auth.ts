@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSlipBoxApiKey } from "./config";
 import { timingSafeEqual } from "./crypto";
+import { mapPassError } from "./http-errors";
 
 export interface AuthResult {
   ok: boolean;
@@ -77,9 +78,8 @@ export function withAuth(
     try {
       return await handler(request);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Internal server error";
-      return NextResponse.json({ error: message }, { status: 500 });
+      // Validation/precondition failures map to 400; everything else to 500.
+      return mapPassError(error);
     }
   };
 }
