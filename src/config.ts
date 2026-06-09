@@ -178,6 +178,23 @@ export const KMEANS_MAX_ITERATIONS = optionalNumericEnv(
   50,
 );
 
+/**
+ * Number of independent k-means restarts per cluster pass. Each restart uses
+ * a different k-means++ seeding; the run with the lowest inertia is kept.
+ * A single run is sensitive to unlucky seeding and can produce wildly
+ * unbalanced clusters (e.g. one 21-note mega-cluster); restarts make the
+ * result stable and well-balanced.
+ */
+export const KMEANS_RESTARTS = optionalNumericEnv("KMEANS_RESTARTS", 10);
+
+/**
+ * Seed for the deterministic RNG used to initialize k-means. A fixed seed
+ * makes clustering reproducible: the same embeddings index yields the same
+ * clusters on every pass, so downstream tension/decay/exploration results
+ * no longer drift between runs. Override via the KMEANS_SEED env var.
+ */
+export const KMEANS_SEED = optionalNumericEnv("KMEANS_SEED", 42);
+
 /** Minimum number of notes required to run clustering. */
 export const MIN_NOTES_FOR_CLUSTERING = optionalNumericEnv(
   "MIN_NOTES_FOR_CLUSTERING",

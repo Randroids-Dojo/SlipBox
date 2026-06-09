@@ -4,6 +4,9 @@ import {
   squaredDistance,
   kmeansppInit,
   kmeans,
+  kmeansBest,
+  computeInertia,
+  makeRng,
   clusterEmbeddings,
 } from "./cluster";
 import type { EmbeddingsIndex } from "@/types";
@@ -341,5 +344,92 @@ describe("clusterEmbeddings", () => {
       const sorted = [...cluster.noteIds].sort();
       expect(cluster.noteIds).toEqual(sorted);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// makeRng
+// ---------------------------------------------------------------------------
+
+describe("makeRng", () => {
+  it("is deterministic for a given seed", () => {
+    const a = makeRng(42);
+    const b = makeRng(42);
+    const seqA = [a(), a(), a(), a()];
+    const seqB = [b(), b(), b(), b()];
+    expect(seqA).toEqual(seqB);
+  });
+
+  it("yields values in [0, 1)", () => {
+    const rng = makeRng(7);
+    for (let i = 0; i < 100; i++) {
+      const v = rng();
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThan(1);
+    }
+  });
+
+  it("produces different streams for different seeds", () => {
+    expect(makeRng(1)()).not.toBe(makeRng(2)());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeInertia
+// ---------------------------------------------------------------------------
+
+describe("computeInertia", () => {
+  it("is zero when every point sits on its centroid", () => {
+    const vectors = [
+      [0, 0],
+      [10, 10],
+    ];
+    const inertia = computeInertia(vectors, [0, 1], vectors);
+    expect(inertia).toBe(0);
+  });
+
+  it("sums squared distances to assigned centroids", () => {
+    const vectors = [
+      [0, 0],
+      [2, 0],
+    ];
+    const centroids = [[0, 0]];
+    // both assigned to centroid 0: 0 + (2^2) = 4
+    expect(computeInertia(vectors, [0, 0], centroids)).toBe(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// kmeansBest
+// ---------------------------------------------------------------------------
+
+describe("kmeansBest", () => {
+  // Two tight, well-separated blobs.
+  const vectors = [
+    [0, 0],
+    [0.1, 0.1],
+    [10, 10],
+    [10.1, 9.9],
+  ];
+
+  it("is deterministic across calls (seeded RNG)", () => {
+    const a = kmeansBest(vectors, 2);
+    const b = kmeansBest(vectors, 2);
+    expect(a.assignments).toEqual(b.assignments);
+  });
+
+  it("separates the two blobs", () => {
+    const { assignments } = kmeansBest(vectors, 2);
+    expect(assignments[0]).toBe(assignments[1]);
+    expect(assignments[2]).toBe(assignments[3]);
+    expect(assignments[0]).not.toBe(assignments[2]);
+  });
+
+  it("never returns worse inertia than a single default run", () => {
+    const single = kmeans(vectors, 2, undefined, undefined, makeRng(42));
+    const best = kmeansBest(vectors, 2);
+    const singleInertia = computeInertia(vectors, single.assignments, single.centroids);
+    const bestInertia = computeInertia(vectors, best.assignments, best.centroids);
+    expect(bestInertia).toBeLessThanOrEqual(singleInertia);
   });
 });

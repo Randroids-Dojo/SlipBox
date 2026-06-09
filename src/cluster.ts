@@ -13,7 +13,31 @@ import {
   MIN_CLUSTERS,
   MAX_CLUSTERS,
   KMEANS_MAX_ITERATIONS,
+  KMEANS_RESTARTS,
+  KMEANS_SEED,
 } from "./config";
+
+// ---------------------------------------------------------------------------
+// Deterministic RNG
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a seeded pseudo-random number generator (mulberry32).
+ *
+ * Returns a function that yields deterministic values in [0, 1). Used to make
+ * k-means initialization reproducible: the same seed always produces the same
+ * sequence, so a cluster pass over an unchanged graph yields identical
+ * clusters every time.
+ */
+export function makeRng(seed: number): () => number {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 // ---------------------------------------------------------------------------
 // K Selection
@@ -145,12 +169,15 @@ export function kmeansppInit(
  * @param k              - Number of clusters.
  * @param maxIterations  - Maximum iterations before stopping.
  * @param initCentroids  - Optional pre-computed initial centroids.
+ * @param rng            - RNG for k-means++ seeding (ignored if initCentroids
+ *                         is supplied). Defaults to Math.random.
  */
 export function kmeans(
   vectors: EmbeddingVector[],
   k: number,
   maxIterations: number = KMEANS_MAX_ITERATIONS,
   initCentroids?: EmbeddingVector[],
+  rng: () => number = Math.random,
 ): KMeansResult {
   const n = vectors.length;
   const dim = vectors[0].length;
@@ -158,7 +185,7 @@ export function kmeans(
   // Initialize centroids
   let centroids: EmbeddingVector[] = initCentroids
     ? initCentroids.map((c) => [...c])
-    : kmeansppInit(vectors, k);
+    : kmeansppInit(vectors, k, rng);
 
   const assignments = new Array<number>(n).fill(0);
   let iterations = 0;
@@ -218,6 +245,59 @@ export function kmeans(
   return { assignments, centroids, iterations };
 }
 
+/**
+ * Total within-cluster sum of squared distances (k-means objective).
+ * Lower is better — a tighter, more balanced partition.
+ */
+export function computeInertia(
+  vectors: EmbeddingVector[],
+  assignments: number[],
+  centroids: EmbeddingVector[],
+): number {
+  let sum = 0;
+  for (let i = 0; i < vectors.length; i++) {
+    sum += squaredDistance(vectors[i], centroids[assignments[i]]);
+  }
+  return sum;
+}
+
+/**
+ * Run k-means several times from different k-means++ seedings and return the
+ * lowest-inertia result.
+ *
+ * A single k-means run can converge to a poor local optimum on an unlucky
+ * seeding (one giant cluster, several tiny ones). Taking the best of N
+ * restarts makes the partition stable and well-balanced. With a seeded `rng`
+ * the whole search is deterministic, so repeated passes over an unchanged
+ * graph return identical clusters.
+ *
+ * @param restarts - Number of independent runs (defaults to KMEANS_RESTARTS).
+ * @param rng      - Shared RNG stream for all restarts; a fresh seeded stream
+ *                   by default (KMEANS_SEED), making the result reproducible.
+ */
+export function kmeansBest(
+  vectors: EmbeddingVector[],
+  k: number,
+  maxIterations: number = KMEANS_MAX_ITERATIONS,
+  restarts: number = KMEANS_RESTARTS,
+  rng: () => number = makeRng(KMEANS_SEED),
+): KMeansResult {
+  let best: KMeansResult | null = null;
+  let bestInertia = Infinity;
+
+  for (let r = 0; r < Math.max(1, restarts); r++) {
+    const result = kmeans(vectors, k, maxIterations, undefined, rng);
+    const inertia = computeInertia(vectors, result.assignments, result.centroids);
+    if (inertia < bestInertia) {
+      bestInertia = inertia;
+      best = result;
+    }
+  }
+
+  // restarts >= 1 guarantees best is set
+  return best as KMeansResult;
+}
+
 // ---------------------------------------------------------------------------
 // High-level clustering
 // ---------------------------------------------------------------------------
@@ -247,7 +327,8 @@ export function clusterEmbeddings(
   }
 
   const vectors = noteIds.map((id) => index.embeddings[id].vector);
-  const result = kmeans(vectors, k, options?.maxIterations);
+  // Best-of-N restarts with a seeded RNG: stable, well-balanced, reproducible.
+  const result = kmeansBest(vectors, k, options?.maxIterations);
 
   // Build cluster records from assignments
   const clusterMap: Record<string, { noteIds: NoteId[]; centroid: EmbeddingVector }> = {};

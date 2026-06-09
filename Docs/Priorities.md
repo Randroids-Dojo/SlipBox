@@ -172,7 +172,8 @@ Pure k-means clustering of the embedding space, no external dependencies.
 - [x] `squaredDistance()` — Euclidean distance for assignment step
 - [x] `chooseK()` — Automatic cluster count selection bounded by configurable min/max
 - [x] `clusterEmbeddings()` — High-level function: embeddings index → clusters index
-- [x] Config tunables: `CLUSTERS_INDEX_PATH`, `MIN_CLUSTERS`, `MAX_CLUSTERS`, `KMEANS_MAX_ITERATIONS`, `MIN_NOTES_FOR_CLUSTERING`
+- [x] Config tunables: `CLUSTERS_INDEX_PATH`, `MIN_CLUSTERS`, `MAX_CLUSTERS`, `KMEANS_MAX_ITERATIONS`, `MIN_NOTES_FOR_CLUSTERING`, `KMEANS_RESTARTS`, `KMEANS_SEED`
+- [x] Deterministic, balanced clustering: best-of-N restarts (`kmeansBest`) keyed by a seeded RNG (`makeRng`), selecting the lowest-`computeInertia` partition — no run-to-run drift
 - [x] Unit tests (22 tests via vitest)
 
 **Done when:** Given an embeddings index, produces semantically grouped clusters with centroids.

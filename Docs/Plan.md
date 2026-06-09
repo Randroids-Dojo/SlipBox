@@ -180,6 +180,11 @@ Rebuilds backlinks.json and commits.
 K-means clusters the embedding space (automatic K or `{ "k": N }`).
 Commits clusters.json.
 
+Clustering is best-of-N restarts (`KMEANS_RESTARTS`, default 10) seeded by a
+deterministic RNG (`KMEANS_SEED`, default 42): the lowest-inertia partition is
+kept, so results are stable and well-balanced, and a pass over an unchanged
+graph is fully reproducible (no drift in downstream tension/decay/exploration).
+
 ---
 
 ## POST /api/tension-pass
