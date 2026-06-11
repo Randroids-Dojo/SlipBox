@@ -14,3 +14,8 @@
 
 - [Plan](Docs/Plan.md) - Architecture, philosophy, and API reference
 - [Priorities](Docs/Priorities.md) - Implementation roadmap and current status
+
+## Hosted dashboard
+
+- When asked for the hosted dashboard link, use:
+  `https://slip-box-rho.vercel.app/graph`
